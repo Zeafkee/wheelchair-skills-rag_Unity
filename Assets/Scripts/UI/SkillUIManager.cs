@@ -1,348 +1,364 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using WheelchairSkills.API;
 using WheelchairSkills.Training;
 
 namespace WheelchairSkills.UI
 {
     /// <summary>
-    /// Manages UI for skill training system
-    /// Handles panel management, skill selection, and feedback display
+    /// Beceri seçimi, eğitim ekranı ve sonuç ekranını yöneten UI scripti
     /// </summary>
     public class SkillUIManager : MonoBehaviour
     {
-        [Header("Panels")]
-        [SerializeField] private GameObject selectionPanel;
-        [SerializeField] private GameObject trainingPanel;
-        [SerializeField] private GameObject resultsPanel;
+        [Header("UI Panels")]
+        public GameObject skillSelectionPanel;
+        public GameObject trainingPanel;
+        public GameObject resultsPanel;
+        public GameObject loadingPanel;
 
-        [Header("Selection Panel")]
-        [SerializeField] private Transform skillButtonContainer;
-        [SerializeField] private GameObject skillButtonPrefab;
-        [SerializeField] private TMP_InputField userIdInputField;
+        [Header("Skill Selection UI")]
+        public Transform skillListContainer;
+        public GameObject skillButtonPrefab;
+        public Text skillDescriptionText;
 
-        [Header("Training Panel")]
-        [SerializeField] private TextMeshProUGUI skillNameText;
-        [SerializeField] private TextMeshProUGUI currentStepText;
-        [SerializeField] private TextMeshProUGUI stepProgressText;
-        [SerializeField] private TextMeshProUGUI feedbackText;
-        [SerializeField] private Button cancelButton;
+        [Header("Training UI")]
+        public Text currentSkillNameText;
+        public Text attemptStatusText;
+        public Text inputCountText;
+        public Text timerText;
+        public Text hintText;
+        public Button endAttemptButton;
+        public Button requestHintButton;
 
-        [Header("Results Panel")]
-        [SerializeField] private TextMeshProUGUI resultsTitle;
-        [SerializeField] private TextMeshProUGUI performanceText;
-        [SerializeField] private TextMeshProUGUI feedbackResultText;
-        [SerializeField] private Button backToSelectionButton;
-        [SerializeField] private Button retryButton;
+        [Header("Results UI")]
+        public Text resultsSkillNameText;
+        public Text resultsDurationText;
+        public Text resultsInputCountText;
+        public Text resultsSuccessRateText;
+        public Text feedbackText;
+        public Button backToSelectionButton;
+        public Button retryButton;
 
-        [Header("Skills Configuration")]
-        [SerializeField] private string[] availableSkills = new string[]
-        {
-            "İleri Hareket",
-            "Geri Hareket",
-            "Dönüş Yapma",
-            "Engel Aşma",
-            "Rampa Tırmanma",
-            "Kapı Açma"
-        };
+        [Header("References")]
+        public SkillAttemptTracker attemptTracker;
 
-        private string currentUserId;
-        private string currentSkillName;
+        private List<Skill> availableSkills = new List<Skill>();
+        private Skill currentSkill;
 
         private void Start()
         {
-            // Subscribe to tracker events
-            SkillAttemptTracker.Instance.OnFeedbackReceived += HandleFeedback;
-            SkillAttemptTracker.Instance.OnStepChanged += HandleStepChanged;
-            SkillAttemptTracker.Instance.OnAttemptCompleted += HandleAttemptCompleted;
-            SkillAttemptTracker.Instance.OnError += HandleError;
+            // Panel'leri başlangıçta gizle
+            ShowPanel(PanelType.SkillSelection);
 
-            // Setup button listeners
-            if (cancelButton != null)
-                cancelButton.onClick.AddListener(OnCancelAttempt);
-            if (backToSelectionButton != null)
-                backToSelectionButton.onClick.AddListener(OnBackToSelection);
-            if (retryButton != null)
-                retryButton.onClick.AddListener(OnRetry);
+            // Event listener'ları bağla
+            SetupEventListeners();
 
-            // Initialize UI
-            ShowSelectionPanel();
-            CreateSkillButtons();
+            // Becerileri yükle
+            LoadSkills();
         }
 
-        private void OnDestroy()
+        private void SetupEventListeners()
         {
-            // Unsubscribe from events
-            if (SkillAttemptTracker.Instance != null)
+            if (attemptTracker != null)
             {
-                SkillAttemptTracker.Instance.OnFeedbackReceived -= HandleFeedback;
-                SkillAttemptTracker.Instance.OnStepChanged -= HandleStepChanged;
-                SkillAttemptTracker.Instance.OnAttemptCompleted -= HandleAttemptCompleted;
-                SkillAttemptTracker.Instance.OnError -= HandleError;
+                attemptTracker.OnAttemptStarted += OnAttemptStarted;
+                attemptTracker.OnAttemptEnded += OnAttemptEnded;
+                attemptTracker.OnInputRecorded += OnInputRecorded;
+            }
+
+            if (endAttemptButton != null)
+            {
+                endAttemptButton.onClick.AddListener(() => attemptTracker.EndAttempt("completed"));
+            }
+
+            if (requestHintButton != null)
+            {
+                requestHintButton.onClick.AddListener(RequestHint);
+            }
+
+            if (backToSelectionButton != null)
+            {
+                backToSelectionButton.onClick.AddListener(() => ShowPanel(PanelType.SkillSelection));
+            }
+
+            if (retryButton != null)
+            {
+                retryButton.onClick.AddListener(RetryCurrentSkill);
             }
         }
 
-        /// <summary>
-        /// Create skill selection buttons
-        /// </summary>
-        private void CreateSkillButtons()
+        private void Update()
         {
-            if (skillButtonContainer == null || skillButtonPrefab == null)
+            // Timer'ı güncelle
+            if (attemptTracker != null && attemptTracker.isAttemptActive && timerText != null)
             {
-                Debug.LogWarning("Skill button container or prefab not assigned");
+                float elapsed = Time.time - attemptTracker.attemptStartTime;
+                timerText.text = $"Time: {elapsed:F1}s";
+            }
+        }
+
+        #region Skill Loading
+
+        private void LoadSkills()
+        {
+            ShowPanel(PanelType.Loading);
+            
+            StartCoroutine(APIClient.Instance.GetSkills(
+                OnSkillsLoaded,
+                OnSkillsLoadError
+            ));
+        }
+
+        private void OnSkillsLoaded(SkillsResponse response)
+        {
+            availableSkills = response.skills;
+            PopulateSkillList();
+            ShowPanel(PanelType.SkillSelection);
+        }
+
+        private void OnSkillsLoadError(string error)
+        {
+            Debug.LogError($"Failed to load skills: {error}");
+            ShowPanel(PanelType.SkillSelection);
+            
+            // Hata mesajı göster (opsiyonel)
+            if (skillDescriptionText != null)
+            {
+                skillDescriptionText.text = $"Error loading skills: {error}\nUsing offline mode.";
+            }
+        }
+
+        private void PopulateSkillList()
+        {
+            if (skillListContainer == null || skillButtonPrefab == null)
+            {
+                Debug.LogWarning("Skill list container or prefab not assigned!");
                 return;
             }
 
-            // Clear existing buttons
-            foreach (Transform child in skillButtonContainer)
+            // Önceki butonları temizle
+            foreach (Transform child in skillListContainer)
             {
                 Destroy(child.gameObject);
             }
 
-            // Create button for each skill
-            foreach (string skillName in availableSkills)
+            // Her beceri için bir buton oluştur
+            foreach (Skill skill in availableSkills)
             {
-                GameObject buttonObj = Instantiate(skillButtonPrefab, skillButtonContainer);
+                GameObject buttonObj = Instantiate(skillButtonPrefab, skillListContainer);
                 Button button = buttonObj.GetComponent<Button>();
-                TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
+                Text buttonText = buttonObj.GetComponentInChildren<Text>();
 
                 if (buttonText != null)
                 {
-                    buttonText.text = skillName;
+                    buttonText.text = skill.name;
                 }
 
-                // Capture skillName in closure
-                string skill = skillName;
-                button.onClick.AddListener(() => OnSkillSelected(skill));
-            }
-        }
-
-        /// <summary>
-        /// Handle skill selection
-        /// </summary>
-        private void OnSkillSelected(string skillName)
-        {
-            // Get user ID from input field
-            if (userIdInputField != null && !string.IsNullOrEmpty(userIdInputField.text))
-            {
-                currentUserId = userIdInputField.text;
-            }
-            else
-            {
-                // Use default user ID or show error
-                currentUserId = "default_user";
-                Debug.LogWarning("No user ID provided, using default");
-            }
-
-            currentSkillName = skillName;
-            ShowTrainingPanel();
-            StartSkillTraining();
-        }
-
-        /// <summary>
-        /// Start skill training
-        /// </summary>
-        private void StartSkillTraining()
-        {
-            if (skillNameText != null)
-            {
-                skillNameText.text = currentSkillName;
-            }
-
-            if (feedbackText != null)
-            {
-                feedbackText.text = "Beceri denemesi başlatılıyor...";
-            }
-
-            SkillAttemptTracker.Instance.StartSkillAttempt(currentUserId, currentSkillName);
-        }
-
-        /// <summary>
-        /// Handle feedback from tracker
-        /// </summary>
-        private void HandleFeedback(string feedback)
-        {
-            if (feedbackText != null)
-            {
-                feedbackText.text = feedback;
-            }
-        }
-
-        /// <summary>
-        /// Handle step change
-        /// </summary>
-        private void HandleStepChanged(int stepIndex)
-        {
-            StepData currentStep = SkillAttemptTracker.Instance.GetCurrentStep();
-            
-            if (currentStepText != null && currentStep != null)
-            {
-                currentStepText.text = $"Adım {currentStep.step_number}: {currentStep.description}";
-                
-                // Show required actions
-                if (currentStep.required_actions != null && currentStep.required_actions.Length > 0)
+                if (button != null)
                 {
-                    string actions = string.Join(", ", currentStep.required_actions);
-                    currentStepText.text += $"\n\nGerekli aksiyonlar: {actions}";
+                    Skill capturedSkill = skill; // Closure için
+                    button.onClick.AddListener(() => OnSkillSelected(capturedSkill));
                 }
             }
+        }
 
-            if (stepProgressText != null)
+        #endregion
+
+        #region Skill Selection
+
+        private void OnSkillSelected(Skill skill)
+        {
+            currentSkill = skill;
+            
+            if (skillDescriptionText != null)
             {
-                int totalSteps = SkillAttemptTracker.Instance.TotalSteps;
-                stepProgressText.text = $"İlerleme: {stepIndex + 1} / {totalSteps}";
+                skillDescriptionText.text = $"{skill.name}\n\n{skill.description}\n\nDifficulty: {skill.difficulty}";
             }
         }
 
-        /// <summary>
-        /// Handle attempt completion
-        /// </summary>
-        private void HandleAttemptCompleted(bool success, PerformanceData performance)
+        public void StartSelectedSkill()
         {
-            ShowResultsPanel();
-
-            if (resultsTitle != null)
+            if (currentSkill == null)
             {
-                resultsTitle.text = success ? "Başarılı!" : "Tamamlanamadı";
-            }
-
-            if (performanceText != null && performance != null)
-            {
-                performanceText.text = $"Süre: {performance.completion_time:F2}s\n" +
-                                      $"Doğruluk: {performance.accuracy:P0}\n" +
-                                      $"Hatalar: {performance.errors_count}";
-            }
-
-            if (feedbackResultText != null && performance != null)
-            {
-                feedbackResultText.text = performance.feedback;
-            }
-        }
-
-        /// <summary>
-        /// Handle errors
-        /// </summary>
-        private void HandleError(string error)
-        {
-            Debug.LogError($"UI Error: {error}");
-            if (feedbackText != null)
-            {
-                feedbackText.text = $"Hata: {error}";
-            }
-        }
-
-        /// <summary>
-        /// Cancel current attempt
-        /// </summary>
-        private void OnCancelAttempt()
-        {
-            SkillAttemptTracker.Instance.CancelAttempt();
-            ShowSelectionPanel();
-        }
-
-        /// <summary>
-        /// Return to selection panel
-        /// </summary>
-        private void OnBackToSelection()
-        {
-            ShowSelectionPanel();
-        }
-
-        /// <summary>
-        /// Retry current skill
-        /// </summary>
-        private void OnRetry()
-        {
-            ShowTrainingPanel();
-            StartSkillTraining();
-        }
-
-        /// <summary>
-        /// Show selection panel
-        /// </summary>
-        private void ShowSelectionPanel()
-        {
-            SetPanelActive(selectionPanel, true);
-            SetPanelActive(trainingPanel, false);
-            SetPanelActive(resultsPanel, false);
-        }
-
-        /// <summary>
-        /// Show training panel
-        /// </summary>
-        private void ShowTrainingPanel()
-        {
-            SetPanelActive(selectionPanel, false);
-            SetPanelActive(trainingPanel, true);
-            SetPanelActive(resultsPanel, false);
-        }
-
-        /// <summary>
-        /// Show results panel
-        /// </summary>
-        private void ShowResultsPanel()
-        {
-            SetPanelActive(selectionPanel, false);
-            SetPanelActive(trainingPanel, false);
-            SetPanelActive(resultsPanel, true);
-        }
-
-        /// <summary>
-        /// Helper to set panel active state
-        /// </summary>
-        private void SetPanelActive(GameObject panel, bool active)
-        {
-            if (panel != null)
-            {
-                panel.SetActive(active);
-            }
-        }
-
-        /// <summary>
-        /// Get training plan for current user
-        /// </summary>
-        public void GetTrainingPlan()
-        {
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                Debug.LogWarning("No user ID set");
+                Debug.LogWarning("No skill selected!");
                 return;
             }
 
-            APIClient.Instance.GetTrainingPlan(
-                currentUserId,
-                onSuccess: (plan) =>
-                {
-                    Debug.Log($"Training plan received: {plan.reasoning}");
-                    // Could update UI with recommended skills
-                },
-                onError: (error) =>
-                {
-                    Debug.LogError($"Failed to get training plan: {error}");
-                }
-            );
+            if (attemptTracker == null)
+            {
+                Debug.LogError("Attempt tracker not assigned!");
+                return;
+            }
+
+            // Eğitim paneline geç
+            ShowPanel(PanelType.Training);
+            
+            if (currentSkillNameText != null)
+            {
+                currentSkillNameText.text = currentSkill.name;
+            }
+
+            // Denemeyi başlat
+            attemptTracker.StartAttempt(currentSkill.id);
         }
 
-        /// <summary>
-        /// Get guidance for a specific skill
-        /// </summary>
-        public void GetSkillGuidance(string skillName)
+        #endregion
+
+        #region Training
+
+        private void OnAttemptStarted(StartAttemptResponse response)
         {
-            APIClient.Instance.GetSkillGuidance(
-                skillName,
-                "Yeni kullanıcı", // User context
-                onSuccess: (guidance) =>
+            if (attemptStatusText != null)
+            {
+                attemptStatusText.text = "Status: In Progress";
+            }
+
+            if (inputCountText != null)
+            {
+                inputCountText.text = "Inputs: 0";
+            }
+
+            if (hintText != null)
+            {
+                hintText.text = "Press button for hint";
+            }
+        }
+
+        private void OnInputRecorded(string action)
+        {
+            if (inputCountText != null && attemptTracker != null)
+            {
+                inputCountText.text = $"Inputs: {attemptTracker.inputCount}";
+            }
+        }
+
+        private void RequestHint()
+        {
+            if (attemptTracker == null || !attemptTracker.isAttemptActive)
+            {
+                return;
+            }
+
+            attemptTracker.RequestHint("training", response =>
+            {
+                if (hintText != null)
                 {
-                    Debug.Log($"Skill guidance received for {guidance.skill_name}");
-                    // Could show guidance in UI
-                },
-                onError: (error) =>
-                {
-                    Debug.LogError($"Failed to get skill guidance: {error}");
+                    hintText.text = $"Hint: {response.hint}\n\nContext: {response.context}";
                 }
-            );
+            });
+        }
+
+        #endregion
+
+        #region Results
+
+        private void OnAttemptEnded(EndAttemptResponse response)
+        {
+            ShowPanel(PanelType.Results);
+
+            if (resultsSkillNameText != null)
+            {
+                resultsSkillNameText.text = currentSkill.name;
+            }
+
+            if (response.summary != null)
+            {
+                if (resultsDurationText != null)
+                {
+                    resultsDurationText.text = $"Duration: {response.summary.duration:F1}s";
+                }
+
+                if (resultsInputCountText != null)
+                {
+                    resultsInputCountText.text = $"Total Inputs: {response.summary.total_inputs}";
+                }
+
+                if (resultsSuccessRateText != null)
+                {
+                    resultsSuccessRateText.text = $"Success Rate: {response.summary.success_rate:P0}";
+                }
+            }
+
+            // Geri bildirim al
+            LoadFeedback();
+        }
+
+        private void LoadFeedback()
+        {
+            if (attemptTracker == null)
+            {
+                return;
+            }
+
+            attemptTracker.GetFeedback(response =>
+            {
+                if (feedbackText != null)
+                {
+                    string feedbackContent = $"Assessment: {response.overall_assessment}\n\n";
+                    
+                    if (response.recommendations != null && response.recommendations.Count > 0)
+                    {
+                        feedbackContent += "Recommendations:\n";
+                        foreach (string rec in response.recommendations)
+                        {
+                            feedbackContent += $"• {rec}\n";
+                        }
+                    }
+
+                    feedbackText.text = feedbackContent;
+                }
+            });
+        }
+
+        private void RetryCurrentSkill()
+        {
+            if (currentSkill != null)
+            {
+                ShowPanel(PanelType.Training);
+                attemptTracker.StartAttempt(currentSkill.id);
+            }
+        }
+
+        #endregion
+
+        #region Panel Management
+
+        private enum PanelType
+        {
+            SkillSelection,
+            Training,
+            Results,
+            Loading
+        }
+
+        private void ShowPanel(PanelType panelType)
+        {
+            // Tüm panelleri gizle
+            if (skillSelectionPanel != null)
+                skillSelectionPanel.SetActive(panelType == PanelType.SkillSelection);
+            
+            if (trainingPanel != null)
+                trainingPanel.SetActive(panelType == PanelType.Training);
+            
+            if (resultsPanel != null)
+                resultsPanel.SetActive(panelType == PanelType.Results);
+            
+            if (loadingPanel != null)
+                loadingPanel.SetActive(panelType == PanelType.Loading);
+        }
+
+        #endregion
+
+        private void OnDestroy()
+        {
+            // Event listener'ları temizle
+            if (attemptTracker != null)
+            {
+                attemptTracker.OnAttemptStarted -= OnAttemptStarted;
+                attemptTracker.OnAttemptEnded -= OnAttemptEnded;
+                attemptTracker.OnInputRecorded -= OnInputRecorded;
+            }
         }
     }
 }

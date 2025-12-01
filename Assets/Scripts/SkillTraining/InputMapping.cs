@@ -4,87 +4,115 @@ using UnityEngine;
 namespace WheelchairSkills.Training
 {
     /// <summary>
-    /// Maps keyboard inputs to action names and descriptions (Turkish)
+    /// Unity KeyCode <-> Backend Action string eşlemesi
     /// </summary>
     public static class InputMapping
     {
-        // KeyCode to action string mapping
-        private static readonly Dictionary<KeyCode, string> keyToAction = new Dictionary<KeyCode, string>
+        // KeyCode'dan backend action string'ine eşleme
+        private static Dictionary<KeyCode, string> keyToAction = new Dictionary<KeyCode, string>()
         {
-            { KeyCode.W, "forward" },
-            { KeyCode.S, "backward" },
+            // Hareket tuşları
+            { KeyCode.W, "move_forward" },
+            { KeyCode.S, "move_backward" },
             { KeyCode.A, "turn_left" },
             { KeyCode.D, "turn_right" },
-            { KeyCode.X, "brake" },
-            { KeyCode.V, "reverse" },
-            { KeyCode.Space, "jump" },
-            { KeyCode.E, "interact" },
-            { KeyCode.R, "reset" },
-            { KeyCode.Q, "strafe_left" },
-            { KeyCode.C, "strafe_right" },
+            
+            // Ok tuşları alternatif
+            { KeyCode.UpArrow, "move_forward" },
+            { KeyCode.DownArrow, "move_backward" },
+            { KeyCode.LeftArrow, "turn_left" },
+            { KeyCode.RightArrow, "turn_right" },
+            
+            // Özel aksiyonlar
+            { KeyCode.Space, "brake" },
             { KeyCode.LeftShift, "boost" },
-            { KeyCode.LeftControl, "slow" }
+            { KeyCode.E, "interact" },
+            { KeyCode.Q, "special_action" },
+            
+            // UI ve kontrol tuşları
+            { KeyCode.Escape, "pause" },
+            { KeyCode.Return, "confirm" },
+            { KeyCode.Backspace, "back" },
+            { KeyCode.Tab, "switch_view" },
+            
+            // Beceri spesifik tuşlar
+            { KeyCode.Alpha1, "skill_1" },
+            { KeyCode.Alpha2, "skill_2" },
+            { KeyCode.Alpha3, "skill_3" },
+            { KeyCode.Alpha4, "skill_4" },
+            { KeyCode.Alpha5, "skill_5" },
         };
 
-        // Action to Turkish description mapping
-        private static readonly Dictionary<string, string> actionDescriptions = new Dictionary<string, string>
-        {
-            { "forward", "İleri hareket" },
-            { "backward", "Geri hareket" },
-            { "turn_left", "Sola dönüş" },
-            { "turn_right", "Sağa dönüş" },
-            { "brake", "Fren" },
-            { "reverse", "Geri vites" },
-            { "jump", "Zıplama" },
-            { "interact", "Etkileşim" },
-            { "reset", "Sıfırlama" },
-            { "strafe_left", "Sola kayma" },
-            { "strafe_right", "Sağa kayma" },
-            { "boost", "Hızlanma" },
-            { "slow", "Yavaşlama" }
-        };
+        // Action string'den KeyCode'a eşleme (ters çeviri için)
+        private static Dictionary<string, KeyCode> actionToKey;
 
-        /// <summary>
-        /// Get action name from KeyCode
-        /// </summary>
-        public static string GetAction(KeyCode key)
+        static InputMapping()
         {
-            return keyToAction.ContainsKey(key) ? keyToAction[key] : null;
+            // Ters eşlemeyi oluştur
+            actionToKey = new Dictionary<string, KeyCode>();
+            foreach (var kvp in keyToAction)
+            {
+                if (!actionToKey.ContainsKey(kvp.Value))
+                {
+                    actionToKey[kvp.Value] = kvp.Key;
+                }
+            }
         }
 
         /// <summary>
-        /// Get Turkish description for action
+        /// KeyCode'u backend action string'ine çevirir
         /// </summary>
-        public static string GetDescription(string action)
+        public static string GetAction(KeyCode keyCode)
         {
-            return actionDescriptions.ContainsKey(action) ? actionDescriptions[action] : action;
+            if (keyToAction.TryGetValue(keyCode, out string action))
+            {
+                return action;
+            }
+            return null;
         }
 
         /// <summary>
-        /// Get Turkish description directly from KeyCode
+        /// Backend action string'ini KeyCode'a çevirir
         /// </summary>
-        public static string GetDescriptionFromKey(KeyCode key)
+        public static KeyCode GetKeyCode(string action)
         {
-            string action = GetAction(key);
-            return action != null ? GetDescription(action) : null;
+            if (actionToKey.TryGetValue(action, out KeyCode keyCode))
+            {
+                return keyCode;
+            }
+            return KeyCode.None;
         }
 
         /// <summary>
-        /// Check if a key is mapped
+        /// Bir KeyCode'un eşlemede olup olmadığını kontrol eder
         /// </summary>
-        public static bool IsKeyMapped(KeyCode key)
+        public static bool IsValidKey(KeyCode keyCode)
         {
-            return keyToAction.ContainsKey(key);
+            return keyToAction.ContainsKey(keyCode);
         }
 
         /// <summary>
-        /// Get all mapped keys
+        /// Bir action string'inin eşlemede olup olmadığını kontrol eder
         /// </summary>
-        public static KeyCode[] GetAllMappedKeys()
+        public static bool IsValidAction(string action)
         {
-            KeyCode[] keys = new KeyCode[keyToAction.Count];
-            keyToAction.Keys.CopyTo(keys, 0);
-            return keys;
+            return actionToKey.ContainsKey(action);
+        }
+
+        /// <summary>
+        /// Tüm eşlenmiş tuşları döndürür
+        /// </summary>
+        public static IEnumerable<KeyCode> GetAllKeys()
+        {
+            return keyToAction.Keys;
+        }
+
+        /// <summary>
+        /// Tüm action string'lerini döndürür
+        /// </summary>
+        public static IEnumerable<string> GetAllActions()
+        {
+            return actionToKey.Keys;
         }
     }
 }

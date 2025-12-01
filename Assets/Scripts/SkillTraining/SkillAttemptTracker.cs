@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using WheelchairSkills.API;
@@ -6,241 +7,257 @@ using WheelchairSkills.API;
 namespace WheelchairSkills.Training
 {
     /// <summary>
-    /// Singleton tracker for managing skill training attempts
-    /// Tracks attempt state, validates inputs, and communicates with backend
+    /// Deneme durumunu yöneten, input işleyen ve API çağrılarını yapan ana sınıf
     /// </summary>
     public class SkillAttemptTracker : MonoBehaviour
     {
-        private static SkillAttemptTracker _instance;
-        
-        public static SkillAttemptTracker Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    GameObject go = new GameObject("SkillAttemptTracker");
-                    _instance = go.AddComponent<SkillAttemptTracker>();
-                    DontDestroyOnLoad(go);
-                }
-                return _instance;
-            }
-        }
+        [Header("Attempt Settings")]
+        public string userId = "default_user";
+        public bool autoStartAttempt = false;
 
-        // Events for UI updates
-        public event Action<string> OnFeedbackReceived;
-        public event Action<int> OnStepChanged;
-        public event Action<bool, PerformanceData> OnAttemptCompleted;
+        [Header("Current State")]
+        public string currentSkillId;
+        public string currentAttemptId;
+        public bool isAttemptActive = false;
+        public float attemptStartTime;
+        public int inputCount = 0;
+
+        [Header("Action History")]
+        public List<string> recentActions = new List<string>();
+        public int maxRecentActionsCount = 10;
+
+        // Events
+        public event Action<StartAttemptResponse> OnAttemptStarted;
+        public event Action<EndAttemptResponse> OnAttemptEnded;
+        public event Action<string> OnInputRecorded; // action name
         public event Action<string> OnError;
 
-        // Attempt state
-        private bool isAttemptActive = false;
-        private string currentAttemptId;
-        private string currentUserId;
-        private string currentSkillName;
-        private int currentStepIndex = 0;
-        private float attemptStartTime;
-        private int errorsCount = 0;
-        private List<string> recordedInputs = new List<string>();
-        
-        // Step data
-        private StepData[] steps;
-
-        // Properties
-        public bool IsAttemptActive => isAttemptActive;
-        public int CurrentStepIndex => currentStepIndex;
-        public int TotalSteps => steps?.Length ?? 0;
-        public string CurrentSkillName => currentSkillName;
-
-        private void Awake()
+        private void Start()
         {
-            if (_instance != null && _instance != this)
+            if (autoStartAttempt && !string.IsNullOrEmpty(currentSkillId))
             {
-                Destroy(gameObject);
-                return;
+                StartAttempt(currentSkillId);
             }
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
         }
 
         /// <summary>
-        /// Start a new skill training attempt
+        /// Yeni bir deneme başlatır
         /// </summary>
-        public void StartSkillAttempt(string userId, string skillName)
+        public void StartAttempt(string skillId)
         {
             if (isAttemptActive)
             {
-                Debug.LogWarning("Attempt already active. Complete current attempt first.");
+                Debug.LogWarning("An attempt is already active. Please end it before starting a new one.");
                 return;
             }
 
-            currentUserId = userId;
-            currentSkillName = skillName;
+            currentSkillId = skillId;
+            StartAttemptRequest request = new StartAttemptRequest
+            {
+                skill_id = skillId,
+                user_id = userId
+            };
 
-            APIClient.Instance.StartSkillAttempt(userId, skillName,
-                onSuccess: (response) =>
-                {
-                    currentAttemptId = response.attempt_id;
-                    steps = response.steps;
-                    currentStepIndex = 0;
-                    errorsCount = 0;
-                    recordedInputs.Clear();
-                    isAttemptActive = true;
-                    attemptStartTime = Time.time;
-                    
-                    Debug.Log($"Skill attempt started: {response.attempt_id}");
-                    OnStepChanged?.Invoke(currentStepIndex);
-                },
-                onError: (error) =>
-                {
-                    Debug.LogError($"Failed to start skill attempt: {error}");
-                    OnError?.Invoke($"Beceri denemesi başlatılamadı: {error}");
-                }
-            );
+            StartCoroutine(APIClient.Instance.StartAttempt(
+                request,
+                OnStartAttemptSuccess,
+                OnStartAttemptError
+            ));
+        }
+
+        private void OnStartAttemptSuccess(StartAttemptResponse response)
+        {
+            currentAttemptId = response.attempt_id;
+            isAttemptActive = true;
+            attemptStartTime = Time.time;
+            inputCount = 0;
+            recentActions.Clear();
+
+            Debug.Log($"Attempt started: {currentAttemptId} for skill: {currentSkillId}");
+            OnAttemptStarted?.Invoke(response);
+        }
+
+        private void OnStartAttemptError(string error)
+        {
+            Debug.LogError($"Failed to start attempt: {error}");
+            OnError?.Invoke($"Start attempt failed: {error}");
         }
 
         /// <summary>
-        /// Process user input during active attempt
+        /// Bir input aksiyonunu kaydeder
         /// </summary>
-        public void ProcessInput(KeyCode key)
+        public void RecordInput(string action, Dictionary<string, object> metadata = null)
         {
             if (!isAttemptActive)
             {
+                Debug.LogWarning("No active attempt. Cannot record input.");
                 return;
             }
 
-            string action = InputMapping.GetAction(key);
-            if (action == null)
-            {
-                return; // Key not mapped
-            }
-
-            string actionDescription = InputMapping.GetDescription(action);
             float timestamp = Time.time - attemptStartTime;
 
-            // Record the input
-            recordedInputs.Add(action);
+            RecordInputRequest request = new RecordInputRequest
+            {
+                attempt_id = currentAttemptId,
+                action = action,
+                timestamp = timestamp,
+                metadata = metadata ?? new Dictionary<string, object>()
+            };
 
-            // Send to backend
-            APIClient.Instance.RecordInput(
-                currentAttemptId,
-                action,
-                actionDescription,
-                timestamp,
-                currentStepIndex,
-                onSuccess: (response) =>
-                {
-                    OnFeedbackReceived?.Invoke(response.feedback);
-                    
-                    if (response.step_completed)
-                    {
-                        currentStepIndex = response.next_step;
-                        OnStepChanged?.Invoke(currentStepIndex);
-                        
-                        // Check if all steps completed
-                        if (currentStepIndex >= steps.Length)
-                        {
-                            CompleteAttempt(true);
-                        }
-                    }
-                    else if (!response.success)
-                    {
-                        errorsCount++;
-                    }
-                },
-                onError: (error) =>
-                {
-                    Debug.LogError($"Failed to record input: {error}");
-                    errorsCount++;
-                }
-            );
+            // Son aksiyonları güncelle
+            recentActions.Add(action);
+            if (recentActions.Count > maxRecentActionsCount)
+            {
+                recentActions.RemoveAt(0);
+            }
+
+            inputCount++;
+
+            StartCoroutine(APIClient.Instance.RecordInput(
+                request,
+                response => OnRecordInputSuccess(response, action),
+                OnRecordInputError
+            ));
+        }
+
+        private void OnRecordInputSuccess(RecordInputResponse response, string action)
+        {
+            Debug.Log($"Input recorded: {action} - {response.message}");
+            OnInputRecorded?.Invoke(action);
+        }
+
+        private void OnRecordInputError(string error)
+        {
+            Debug.LogError($"Failed to record input: {error}");
+            OnError?.Invoke($"Record input failed: {error}");
         }
 
         /// <summary>
-        /// Complete the current attempt
+        /// Aktif denemeyi sonlandırır
         /// </summary>
-        public void CompleteAttempt(bool success)
+        public void EndAttempt(string status = "completed")
         {
             if (!isAttemptActive)
             {
+                Debug.LogWarning("No active attempt to end.");
                 return;
             }
 
-            float completionTime = Time.time - attemptStartTime;
-            int stepsCompleted = currentStepIndex;
+            float duration = Time.time - attemptStartTime;
 
-            APIClient.Instance.CompleteSkillAttempt(
-                currentAttemptId,
-                success,
-                completionTime,
-                stepsCompleted,
-                errorsCount,
-                onSuccess: (response) =>
-                {
-                    Debug.Log($"Attempt completed: {response.message}");
-                    OnAttemptCompleted?.Invoke(success, response.performance);
-                    ResetAttemptState();
-                },
-                onError: (error) =>
-                {
-                    Debug.LogError($"Failed to complete attempt: {error}");
-                    OnError?.Invoke($"Deneme tamamlanamadı: {error}");
-                    ResetAttemptState();
-                }
-            );
-        }
-
-        /// <summary>
-        /// Cancel the current attempt
-        /// </summary>
-        public void CancelAttempt()
-        {
-            if (isAttemptActive)
+            EndAttemptRequest request = new EndAttemptRequest
             {
-                CompleteAttempt(false);
-            }
+                attempt_id = currentAttemptId,
+                status = status,
+                duration = duration
+            };
+
+            StartCoroutine(APIClient.Instance.EndAttempt(
+                request,
+                OnEndAttemptSuccess,
+                OnEndAttemptError
+            ));
         }
 
-        /// <summary>
-        /// Get current step information
-        /// </summary>
-        public StepData GetCurrentStep()
-        {
-            if (steps != null && currentStepIndex < steps.Length)
-            {
-                return steps[currentStepIndex];
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Get all steps for current skill
-        /// </summary>
-        public StepData[] GetAllSteps()
-        {
-            return steps;
-        }
-
-        /// <summary>
-        /// Reset attempt state
-        /// </summary>
-        private void ResetAttemptState()
+        private void OnEndAttemptSuccess(EndAttemptResponse response)
         {
             isAttemptActive = false;
-            currentAttemptId = null;
-            currentStepIndex = 0;
-            errorsCount = 0;
-            recordedInputs.Clear();
-            steps = null;
+            Debug.Log($"Attempt ended: {response.message}");
+            
+            if (response.summary != null)
+            {
+                Debug.Log($"Summary - Total inputs: {response.summary.total_inputs}, Duration: {response.summary.duration}s, Success rate: {response.summary.success_rate}");
+            }
+
+            OnAttemptEnded?.Invoke(response);
+        }
+
+        private void OnEndAttemptError(string error)
+        {
+            Debug.LogError($"Failed to end attempt: {error}");
+            OnError?.Invoke($"End attempt failed: {error}");
+            
+            // Hata durumunda da denemeyi kapat
+            isAttemptActive = false;
         }
 
         /// <summary>
-        /// Get attempt statistics
+        /// Deneme geri bildirimini alır
         /// </summary>
-        public (int stepsCompleted, int errorsCount, float elapsedTime) GetAttemptStats()
+        public void GetFeedback(Action<GetFeedbackResponse> onSuccess)
         {
-            float elapsedTime = isAttemptActive ? Time.time - attemptStartTime : 0f;
-            return (currentStepIndex, errorsCount, elapsedTime);
+            if (string.IsNullOrEmpty(currentAttemptId))
+            {
+                Debug.LogWarning("No attempt ID available for feedback.");
+                return;
+            }
+
+            StartCoroutine(APIClient.Instance.GetAttemptFeedback(
+                currentAttemptId,
+                onSuccess,
+                error => Debug.LogError($"Failed to get feedback: {error}")
+            ));
+        }
+
+        /// <summary>
+        /// Dinamik ipucu ister
+        /// </summary>
+        public void RequestHint(string currentState, Action<DynamicHintResponse> onSuccess)
+        {
+            if (!isAttemptActive)
+            {
+                Debug.LogWarning("No active attempt. Cannot request hint.");
+                return;
+            }
+
+            DynamicHintRequest request = new DynamicHintRequest
+            {
+                skill_id = currentSkillId,
+                current_state = currentState,
+                recent_actions = new List<string>(recentActions)
+            };
+
+            StartCoroutine(APIClient.Instance.GetDynamicHint(
+                request,
+                onSuccess,
+                error => Debug.LogError($"Failed to get hint: {error}")
+            ));
+        }
+
+        /// <summary>
+        /// Bağlamsal yardım ister
+        /// </summary>
+        public void RequestHelp(string query, Action<ContextualHelpResponse> onSuccess)
+        {
+            ContextualHelpRequest request = new ContextualHelpRequest
+            {
+                skill_id = currentSkillId,
+                query = query
+            };
+
+            StartCoroutine(APIClient.Instance.GetContextualHelp(
+                request,
+                onSuccess,
+                error => Debug.LogError($"Failed to get help: {error}")
+            ));
+        }
+
+        private void OnDestroy()
+        {
+            // Uygulama kapandığında aktif denemeyi sonlandır
+            if (isAttemptActive)
+            {
+                EndAttempt("abandoned");
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            // Uygulama kapatılırken aktif denemeyi sonlandır
+            if (isAttemptActive)
+            {
+                EndAttempt("abandoned");
+            }
         }
     }
 }

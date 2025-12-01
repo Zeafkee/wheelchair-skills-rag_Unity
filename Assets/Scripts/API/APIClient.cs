@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -7,13 +8,11 @@ using UnityEngine.Networking;
 namespace WheelchairSkills.API
 {
     /// <summary>
-    /// Singleton API client for communicating with RAG backend
-    /// Uses UnityWebRequest for HTTP communication
+    /// UnityWebRequest kullanan HTTP istemcisi (Singleton pattern)
     /// </summary>
     public class APIClient : MonoBehaviour
     {
         private static APIClient _instance;
-        
         public static APIClient Instance
         {
             get
@@ -39,45 +38,93 @@ namespace WheelchairSkills.API
             DontDestroyOnLoad(gameObject);
         }
 
-        /// <summary>
-        /// Generic GET request
-        /// </summary>
-        public IEnumerator Get<T>(string url, Action<T> onSuccess, Action<string> onError)
+        #region GET Requests
+
+        public IEnumerator GetSkills(Action<SkillsResponse> onSuccess, Action<string> onError)
         {
-            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            using (UnityWebRequest request = UnityWebRequest.Get(APIEndpoints.GetSkillsEndpoint))
             {
-                request.SetRequestHeader("Content-Type", "application/json");
-                
                 yield return request.SendWebRequest();
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     try
                     {
-                        T response = JsonUtility.FromJson<T>(request.downloadHandler.text);
+                        SkillsResponse response = JsonUtility.FromJson<SkillsResponse>(request.downloadHandler.text);
                         onSuccess?.Invoke(response);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        onError?.Invoke($"JSON Parse Error: {e.Message}");
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
                     }
                 }
                 else
                 {
-                    onError?.Invoke($"Request Error: {request.error}");
+                    onError?.Invoke($"Request failed: {request.error}");
                 }
             }
         }
 
-        /// <summary>
-        /// Generic POST request
-        /// </summary>
-        public IEnumerator Post<TRequest, TResponse>(string url, TRequest data, Action<TResponse> onSuccess, Action<string> onError)
+        public IEnumerator GetSkillById(string skillId, Action<Skill> onSuccess, Action<string> onError)
         {
-            string jsonData = JsonUtility.ToJson(data);
+            using (UnityWebRequest request = UnityWebRequest.Get(APIEndpoints.GetSkillByIdEndpoint(skillId)))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        Skill response = JsonUtility.FromJson<Skill>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
+        }
+
+        public IEnumerator GetAttemptFeedback(string attemptId, Action<GetFeedbackResponse> onSuccess, Action<string> onError)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(APIEndpoints.GetAttemptFeedbackEndpoint(attemptId)))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        GetFeedbackResponse response = JsonUtility.FromJson<GetFeedbackResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
+        }
+
+        #endregion
+
+        #region POST Requests
+
+        public IEnumerator StartAttempt(StartAttemptRequest requestData, Action<StartAttemptResponse> onSuccess, Action<string> onError)
+        {
+            string jsonData = JsonUtility.ToJson(requestData);
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
 
-            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.StartAttemptEndpoint, "POST"))
             {
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
@@ -89,130 +136,149 @@ namespace WheelchairSkills.API
                 {
                     try
                     {
-                        TResponse response = JsonUtility.FromJson<TResponse>(request.downloadHandler.text);
+                        StartAttemptResponse response = JsonUtility.FromJson<StartAttemptResponse>(request.downloadHandler.text);
                         onSuccess?.Invoke(response);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        onError?.Invoke($"JSON Parse Error: {e.Message}");
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
                     }
                 }
                 else
                 {
-                    onError?.Invoke($"Request Error: {request.error}");
+                    onError?.Invoke($"Request failed: {request.error}");
                 }
             }
         }
 
-        /// <summary>
-        /// Create a new user
-        /// </summary>
-        public void CreateUser(string username, string email, Action<UserResponse> onSuccess, Action<string> onError)
+        public IEnumerator RecordInput(RecordInputRequest requestData, Action<RecordInputResponse> onSuccess, Action<string> onError)
         {
-            var request = new CreateUserRequest { username = username, email = email };
-            string url = APIEndpoints.Format(APIEndpoints.CREATE_USER);
-            StartCoroutine(Post<CreateUserRequest, UserResponse>(url, request, onSuccess, onError));
-        }
+            string jsonData = JsonUtility.ToJson(requestData);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
 
-        /// <summary>
-        /// Get user information
-        /// </summary>
-        public void GetUser(string userId, Action<UserResponse> onSuccess, Action<string> onError)
-        {
-            string url = APIEndpoints.Format(APIEndpoints.GET_USER, userId);
-            StartCoroutine(Get<UserResponse>(url, onSuccess, onError));
-        }
-
-        /// <summary>
-        /// Get user progress
-        /// </summary>
-        public void GetUserProgress(string userId, Action<UserProgress> onSuccess, Action<string> onError)
-        {
-            string url = APIEndpoints.Format(APIEndpoints.GET_USER_PROGRESS, userId);
-            StartCoroutine(Get<UserProgress>(url, onSuccess, onError));
-        }
-
-        /// <summary>
-        /// Start a new skill attempt
-        /// </summary>
-        public void StartSkillAttempt(string userId, string skillName, Action<StartAttemptResponse> onSuccess, Action<string> onError)
-        {
-            var request = new StartAttemptRequest { user_id = userId, skill_name = skillName };
-            string url = APIEndpoints.Format(APIEndpoints.START_SKILL_ATTEMPT);
-            StartCoroutine(Post<StartAttemptRequest, StartAttemptResponse>(url, request, onSuccess, onError));
-        }
-
-        /// <summary>
-        /// Record user input during skill attempt
-        /// </summary>
-        public void RecordInput(string attemptId, string action, string actionDescription, float timestamp, int currentStep, 
-            Action<RecordInputResponse> onSuccess, Action<string> onError)
-        {
-            var request = new RecordInputRequest 
-            { 
-                action = action, 
-                action_description = actionDescription,
-                timestamp = timestamp,
-                current_step = currentStep
-            };
-            string url = APIEndpoints.Format(APIEndpoints.RECORD_INPUT, attemptId);
-            StartCoroutine(Post<RecordInputRequest, RecordInputResponse>(url, request, onSuccess, onError));
-        }
-
-        /// <summary>
-        /// Complete a skill attempt
-        /// </summary>
-        public void CompleteSkillAttempt(string attemptId, bool success, float completionTime, int stepsCompleted, int errorsCount,
-            Action<CompleteAttemptResponse> onSuccess, Action<string> onError)
-        {
-            var request = new CompleteAttemptRequest
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.RecordInputEndpoint, "POST"))
             {
-                success = success,
-                completion_time = completionTime,
-                steps_completed = stepsCompleted,
-                errors_count = errorsCount
-            };
-            string url = APIEndpoints.Format(APIEndpoints.COMPLETE_SKILL_ATTEMPT, attemptId);
-            StartCoroutine(Post<CompleteAttemptRequest, CompleteAttemptResponse>(url, request, onSuccess, onError));
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        RecordInputResponse response = JsonUtility.FromJson<RecordInputResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
         }
 
-        /// <summary>
-        /// Get skill attempt details
-        /// </summary>
-        public void GetSkillAttempt(string attemptId, Action<SkillAttemptResponse> onSuccess, Action<string> onError)
+        public IEnumerator EndAttempt(EndAttemptRequest requestData, Action<EndAttemptResponse> onSuccess, Action<string> onError)
         {
-            string url = APIEndpoints.Format(APIEndpoints.GET_SKILL_ATTEMPT, attemptId);
-            StartCoroutine(Get<SkillAttemptResponse>(url, onSuccess, onError));
+            string jsonData = JsonUtility.ToJson(requestData);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.EndAttemptEndpoint, "POST"))
+            {
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        EndAttemptResponse response = JsonUtility.FromJson<EndAttemptResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
         }
 
-        /// <summary>
-        /// Get training plan from RAG
-        /// </summary>
-        public void GetTrainingPlan(string userId, Action<TrainingPlan> onSuccess, Action<string> onError)
+        public IEnumerator GetDynamicHint(DynamicHintRequest requestData, Action<DynamicHintResponse> onSuccess, Action<string> onError)
         {
-            var request = new TrainingPlanRequest { user_id = userId };
-            string url = APIEndpoints.Format(APIEndpoints.GET_TRAINING_PLAN);
-            StartCoroutine(Post<TrainingPlanRequest, TrainingPlan>(url, request, onSuccess, onError));
+            string jsonData = JsonUtility.ToJson(requestData);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.GetDynamicHintEndpoint, "POST"))
+            {
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        DynamicHintResponse response = JsonUtility.FromJson<DynamicHintResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
         }
 
-        /// <summary>
-        /// Get skill guidance from RAG
-        /// </summary>
-        public void GetSkillGuidance(string skillName, string userContext, Action<SkillGuidanceResponse> onSuccess, Action<string> onError)
+        public IEnumerator GetContextualHelp(ContextualHelpRequest requestData, Action<ContextualHelpResponse> onSuccess, Action<string> onError)
         {
-            var request = new SkillGuidanceRequest { skill_name = skillName, user_context = userContext };
-            string url = APIEndpoints.Format(APIEndpoints.GET_SKILL_GUIDANCE);
-            StartCoroutine(Post<SkillGuidanceRequest, SkillGuidanceResponse>(url, request, onSuccess, onError));
+            string jsonData = JsonUtility.ToJson(requestData);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.GetContextualHelpEndpoint, "POST"))
+            {
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        ContextualHelpResponse response = JsonUtility.FromJson<ContextualHelpResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
         }
 
-        /// <summary>
-        /// Analyze performance using RAG
-        /// </summary>
-        public void AnalyzePerformance(string attemptId, Action<AnalyzePerformanceResponse> onSuccess, Action<string> onError)
-        {
-            var request = new AnalyzePerformanceRequest { attempt_id = attemptId };
-            string url = APIEndpoints.Format(APIEndpoints.ANALYZE_PERFORMANCE);
-            StartCoroutine(Post<AnalyzePerformanceRequest, AnalyzePerformanceResponse>(url, request, onSuccess, onError));
-        }
+        #endregion
     }
 }

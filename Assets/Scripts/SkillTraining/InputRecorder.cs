@@ -1,74 +1,161 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace WheelchairSkills.Training
 {
     /// <summary>
-    /// Records keyboard inputs during skill training
-    /// Listens for mapped keys and forwards them to SkillAttemptTracker
+    /// Kullanıcı tuş girişlerini dinleyip tracker'a ileten script
     /// </summary>
     public class InputRecorder : MonoBehaviour
     {
-        [Header("Settings")]
-        [Tooltip("Enable/disable input recording")]
-        public bool recordingEnabled = true;
+        [Header("References")]
+        public SkillAttemptTracker attemptTracker;
 
-        [Tooltip("Show debug messages for recorded inputs")]
-        public bool showDebugMessages = false;
+        [Header("Recording Settings")]
+        public bool isRecording = true;
+        public bool recordOnlyMappedKeys = true;
+        public bool includeMetadata = true;
+
+        [Header("Debug")]
+        public bool showDebugLogs = false;
+
+        private void Start()
+        {
+            // Eğer tracker atanmamışsa, aynı GameObject'te ara
+            if (attemptTracker == null)
+            {
+                attemptTracker = GetComponent<SkillAttemptTracker>();
+            }
+
+            // Hala bulunamadıysa, sahnede ara
+            if (attemptTracker == null)
+            {
+                attemptTracker = FindObjectOfType<SkillAttemptTracker>();
+            }
+
+            if (attemptTracker == null)
+            {
+                Debug.LogError("InputRecorder: SkillAttemptTracker not found!");
+            }
+        }
 
         private void Update()
         {
-            if (!recordingEnabled)
+            if (!isRecording || attemptTracker == null || !attemptTracker.isAttemptActive)
             {
                 return;
             }
 
-            // Only record if there's an active attempt
-            if (!SkillAttemptTracker.Instance.IsAttemptActive)
+            // Tüm eşlenmiş tuşları kontrol et
+            if (recordOnlyMappedKeys)
             {
-                return;
-            }
-
-            // Check all mapped keys
-            KeyCode[] mappedKeys = InputMapping.GetAllMappedKeys();
-            foreach (KeyCode key in mappedKeys)
-            {
-                if (Input.GetKeyDown(key))
+                foreach (KeyCode key in InputMapping.GetAllKeys())
                 {
-                    if (showDebugMessages)
+                    if (Input.GetKeyDown(key))
                     {
-                        string action = InputMapping.GetAction(key);
-                        string description = InputMapping.GetDescription(action);
-                        Debug.Log($"Input recorded: {key} -> {action} ({description})");
+                        OnKeyPressed(key);
                     }
-
-                    // Process the input through the tracker
-                    SkillAttemptTracker.Instance.ProcessInput(key);
+                }
+            }
+            else
+            {
+                // Tüm tuşları kontrol et (daha yavaş ama kapsamlı)
+                foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+                {
+                    if (Input.GetKeyDown(key))
+                    {
+                        OnKeyPressed(key);
+                    }
                 }
             }
         }
 
-        /// <summary>
-        /// Enable input recording
-        /// </summary>
-        public void EnableRecording()
+        private void OnKeyPressed(KeyCode key)
         {
-            recordingEnabled = true;
+            string action = InputMapping.GetAction(key);
+            
+            // Eğer eşleme yoksa ve sadece eşlenmiş tuşları kaydediyorsak, atla
+            if (string.IsNullOrEmpty(action) && recordOnlyMappedKeys)
+            {
+                return;
+            }
+
+            // Action yoksa KeyCode adını kullan
+            if (string.IsNullOrEmpty(action))
+            {
+                action = key.ToString();
+            }
+
+            // Metadata oluştur
+            Dictionary<string, object> metadata = null;
+            if (includeMetadata)
+            {
+                metadata = CreateMetadata(key);
+            }
+
+            // Tracker'a kaydet
+            attemptTracker.RecordInput(action, metadata);
+
+            if (showDebugLogs)
+            {
+                Debug.Log($"Input recorded: {key} -> {action}");
+            }
+        }
+
+        private Dictionary<string, object> CreateMetadata(KeyCode key)
+        {
+            Dictionary<string, object> metadata = new Dictionary<string, object>
+            {
+                { "key_code", key.ToString() },
+                { "timestamp_unity", Time.time },
+                { "frame", Time.frameCount }
+            };
+
+            // Ek bağlamsal bilgi ekle
+            if (Camera.main != null)
+            {
+                metadata["camera_position"] = Camera.main.transform.position.ToString();
+                metadata["camera_rotation"] = Camera.main.transform.rotation.eulerAngles.ToString();
+            }
+
+            // Karakter pozisyonu (eğer varsa)
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                metadata["player_position"] = player.transform.position.ToString();
+                metadata["player_rotation"] = player.transform.rotation.eulerAngles.ToString();
+            }
+
+            return metadata;
         }
 
         /// <summary>
-        /// Disable input recording
-        /// </summary>
-        public void DisableRecording()
-        {
-            recordingEnabled = false;
-        }
-
-        /// <summary>
-        /// Toggle input recording
+        /// Kayıt durumunu açıp kapatır
         /// </summary>
         public void ToggleRecording()
         {
-            recordingEnabled = !recordingEnabled;
+            isRecording = !isRecording;
+            Debug.Log($"Input recording: {(isRecording ? "enabled" : "disabled")}");
+        }
+
+        /// <summary>
+        /// Kayıt durumunu ayarlar
+        /// </summary>
+        public void SetRecording(bool enabled)
+        {
+            isRecording = enabled;
+            Debug.Log($"Input recording: {(isRecording ? "enabled" : "disabled")}");
+        }
+
+        /// <summary>
+        /// Manuel olarak bir aksiyonu kaydeder
+        /// </summary>
+        public void RecordAction(string action, Dictionary<string, object> metadata = null)
+        {
+            if (attemptTracker != null && attemptTracker.isAttemptActive)
+            {
+                attemptTracker.RecordInput(action, metadata);
+            }
         }
     }
 }

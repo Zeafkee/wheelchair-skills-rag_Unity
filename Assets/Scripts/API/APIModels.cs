@@ -5,187 +5,139 @@ using UnityEngine;
 namespace WheelchairSkills.API
 {
     /// <summary>
-    /// Data models for API communication, serializable with Unity's JsonUtility
+    /// JSON veri modelleri
     /// </summary>
 
     [Serializable]
-    public class CreateUserRequest
+    public class Skill
     {
-        public string username;
-        public string email;
+        public string id;
+        public string name;
+        public string description;
+        public string difficulty;
+        public List<string> required_actions;
     }
 
     [Serializable]
-    public class UserResponse
+    public class SkillsResponse
     {
-        public string user_id;
-        public string username;
-        public string email;
-        public string created_at;
+        public List<Skill> skills;
     }
 
     [Serializable]
     public class StartAttemptRequest
     {
+        public string skill_id;
         public string user_id;
-        public string skill_name;
     }
 
     [Serializable]
     public class StartAttemptResponse
     {
         public string attempt_id;
-        public string skill_name;
-        public StepData[] steps;
-        public string started_at;
-    }
-
-    [Serializable]
-    public class StepData
-    {
-        public int step_number;
-        public string description;
-        public string[] required_actions;
+        public string skill_id;
+        public string status;
+        public string timestamp;
     }
 
     [Serializable]
     public class RecordInputRequest
     {
+        public string attempt_id;
         public string action;
-        public string action_description;
         public float timestamp;
-        public int current_step;
+        public Dictionary<string, object> metadata;
+
+        public RecordInputRequest()
+        {
+            metadata = new Dictionary<string, object>();
+        }
     }
 
     [Serializable]
     public class RecordInputResponse
     {
-        public bool success;
-        public string feedback;
-        public bool step_completed;
-        public int next_step;
-    }
-
-    [Serializable]
-    public class CompleteAttemptRequest
-    {
-        public bool success;
-        public float completion_time;
-        public int steps_completed;
-        public int errors_count;
-    }
-
-    [Serializable]
-    public class CompleteAttemptResponse
-    {
-        public bool success;
-        public string message;
-        public PerformanceData performance;
-    }
-
-    [Serializable]
-    public class PerformanceData
-    {
-        public float completion_time;
-        public float accuracy;
-        public int errors_count;
-        public string feedback;
-    }
-
-    [Serializable]
-    public class SkillAttemptResponse
-    {
-        public string attempt_id;
-        public string user_id;
-        public string skill_name;
         public string status;
-        public StepData[] steps;
-        public InputRecord[] inputs;
-        public string started_at;
-        public string completed_at;
+        public string message;
     }
 
     [Serializable]
-    public class InputRecord
+    public class EndAttemptRequest
     {
+        public string attempt_id;
+        public string status; // "completed", "failed", "abandoned"
+        public float duration;
+    }
+
+    [Serializable]
+    public class EndAttemptResponse
+    {
+        public string status;
+        public string message;
+        public AttemptSummary summary;
+    }
+
+    [Serializable]
+    public class AttemptSummary
+    {
+        public string attempt_id;
+        public int total_inputs;
+        public float duration;
+        public float success_rate;
+    }
+
+    [Serializable]
+    public class GetFeedbackResponse
+    {
+        public string attempt_id;
+        public List<FeedbackItem> feedback;
+        public string overall_assessment;
+        public List<string> recommendations;
+    }
+
+    [Serializable]
+    public class FeedbackItem
+    {
+        public string timestamp;
         public string action;
-        public string action_description;
-        public float timestamp;
-        public int step_number;
+        public string feedback_type; // "correct", "incorrect", "suggestion"
+        public string message;
     }
 
     [Serializable]
-    public class UserProgress
+    public class DynamicHintRequest
     {
-        public string user_id;
-        public SkillProgress[] skills;
-        public float overall_progress;
+        public string skill_id;
+        public string current_state;
+        public List<string> recent_actions;
+
+        public DynamicHintRequest()
+        {
+            recent_actions = new List<string>();
+        }
     }
 
     [Serializable]
-    public class SkillProgress
+    public class DynamicHintResponse
     {
-        public string skill_name;
-        public int attempts_count;
-        public int successful_attempts;
-        public float average_completion_time;
-        public float best_accuracy;
-        public string last_attempt_date;
+        public string hint;
+        public string context;
+        public List<string> suggested_actions;
     }
 
     [Serializable]
-    public class TrainingPlanRequest
+    public class ContextualHelpRequest
     {
-        public string user_id;
+        public string skill_id;
+        public string query;
     }
 
     [Serializable]
-    public class TrainingPlan
+    public class ContextualHelpResponse
     {
-        public string user_id;
-        public RecommendedSkill[] recommended_skills;
-        public string reasoning;
-    }
-
-    [Serializable]
-    public class RecommendedSkill
-    {
-        public string skill_name;
-        public string difficulty;
-        public string reason;
-        public int priority;
-    }
-
-    [Serializable]
-    public class SkillGuidanceRequest
-    {
-        public string skill_name;
-        public string user_context;
-    }
-
-    [Serializable]
-    public class SkillGuidanceResponse
-    {
-        public string skill_name;
-        public string[] guidance_steps;
-        public string[] tips;
-        public string[] common_mistakes;
-    }
-
-    [Serializable]
-    public class AnalyzePerformanceRequest
-    {
-        public string attempt_id;
-    }
-
-    [Serializable]
-    public class AnalyzePerformanceResponse
-    {
-        public string attempt_id;
-        public string analysis;
-        public string[] strengths;
-        public string[] areas_for_improvement;
-        public string[] recommendations;
+        public string answer;
+        public List<string> relevant_sections;
+        public List<string> related_skills;
     }
 
     [Serializable]
@@ -193,19 +145,6 @@ namespace WheelchairSkills.API
     {
         public string error;
         public string message;
-        public string details;
-    }
-
-    // Wrapper classes for array serialization with JsonUtility
-    [Serializable]
-    public class StepDataArray
-    {
-        public StepData[] steps;
-    }
-
-    [Serializable]
-    public class RecommendedSkillArray
-    {
-        public RecommendedSkill[] skills;
+        public string detail;
     }
 }
