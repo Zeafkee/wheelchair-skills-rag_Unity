@@ -19,24 +19,13 @@ namespace WheelchairSkills.Training
         [Header("Debug")]
         public bool showDebugLogs = false;
 
+        private void Awake()
+        {
+            attemptTracker = SkillAttemptTracker.Instance;
+        }
         private void Start()
         {
-            // Eğer tracker atanmamışsa, aynı GameObject'te ara
-            if (attemptTracker == null)
-            {
-                attemptTracker = GetComponent<SkillAttemptTracker>();
-            }
-
-            // Hala bulunamadıysa, sahnede ara
-            if (attemptTracker == null)
-            {
-                attemptTracker = FindObjectOfType<SkillAttemptTracker>();
-            }
-
-            if (attemptTracker == null)
-            {
-                Debug.LogError("InputRecorder: SkillAttemptTracker not found!");
-            }
+           
         }
 
         private void Update()

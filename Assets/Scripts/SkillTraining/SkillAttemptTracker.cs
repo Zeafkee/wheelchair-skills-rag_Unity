@@ -11,6 +11,8 @@ namespace WheelchairSkills.Training
     /// </summary>
     public class SkillAttemptTracker : MonoBehaviour
     {
+        public static SkillAttemptTracker Instance;
+
         [Header("Attempt Settings")]
         public string userId = "default_user";
         public bool autoStartAttempt = false;
@@ -32,6 +34,13 @@ namespace WheelchairSkills.Training
         public event Action<string> OnInputRecorded; // action name
         public event Action<string> OnError;
 
+        private void Awake()
+        {
+            if(Instance == null)
+            {
+                Instance = this;
+            }
+        }
         private void Start()
         {
             if (autoStartAttempt && !string.IsNullOrEmpty(currentSkillId))
