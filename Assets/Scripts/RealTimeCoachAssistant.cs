@@ -44,7 +44,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
         if (wheelchair != null)
         {
             rb = wheelchair.rb;
-            originalConstraints = rb.constraints;
         }
 
         BuildDefaultActionChecks();
@@ -121,6 +120,10 @@ public class RealtimeCoachTutorial : MonoBehaviour
     public IEnumerator StartTutorial(AskPracticeResponse ragResp)
     {
         if (ragResp == null || ragResp.steps == null || ragResp.steps.Count == 0) yield break;
+        
+        if (rb != null) 
+            originalConstraints = rb.constraints;
+
         steps = ragResp.steps;
         currentSkillId = ragResp.skill_id;
 
