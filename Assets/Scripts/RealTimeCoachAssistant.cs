@@ -34,7 +34,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
     private Dictionary<string, Func<bool>> actionChecks;
     private Dictionary<string, string> actionToKeyMsg;
     private Rigidbody rb;
-    private RigidbodyConstraints originalConstraints;
 
     private void Awake()
     {
@@ -80,57 +79,15 @@ public class RealtimeCoachTutorial : MonoBehaviour
         };
     }
 
-    private void ApplyPhysicalMovement()
-    {
-        if (rb == null) return;
-        rb.constraints = RigidbodyConstraints.FreezeRotationZ;
-
-        float targetX = 0f;
-        if (Input.GetKey(KeyCode.X)) targetX = popAngle;
-        else if (Input.GetKey(KeyCode.V)) targetX = 0f;
-
-        // X Rotasyonu
-        float currentX = rb.rotation.eulerAngles.x;
-        if (currentX > 180) currentX -= 360;
-        float nextX = Mathf.MoveTowards(currentX, targetX, rotateSpeed * Time.deltaTime);
-        
-        // Y Rotasyonu (Dönüş)
-        float turnInput = 0;
-        if (Input.GetKey(KeyCode.A)) turnInput = -1;
-        else if (Input.GetKey(KeyCode.D)) turnInput = 1;
-        
-        Quaternion deltaRot = Quaternion.Euler(0, turnInput * turnSpeed * Time.deltaTime, 0);
-        rb.MoveRotation(Quaternion.Euler(nextX, (rb.rotation * deltaRot).eulerAngles.y, 0f));
-
-        // İleri/Geri Pozisyon
-        float moveInput = 0;
-        if (Input.GetKey(KeyCode.W)) moveInput = 1;
-        else if (Input.GetKey(KeyCode.S)) moveInput = -1;
-        
-        if (moveInput != 0)
-        {
-            Vector3 nextPos = rb.position + wheelchair.transform.forward * moveInput * moveSpeed * Time.deltaTime;
-            rb.MovePosition(nextPos);
-        }
-
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-    }
-
     public IEnumerator StartTutorial(AskPracticeResponse ragResp)
     {
         if (ragResp == null || ragResp.steps == null || ragResp.steps.Count == 0) yield break;
         
-        if (rb != null) 
-            originalConstraints = rb.constraints;
-
         steps = ragResp.steps;
         currentSkillId = ragResp.skill_id;
 
         yield return StartCoroutine(StartAttempt(userId, currentSkillId));
         if (string.IsNullOrEmpty(currentAttemptId)) yield break;
-
-        if (playerControllerToDisable != null) playerControllerToDisable.enabled = false;
 
         for (currentStepIndex = 0; currentStepIndex < steps.Count; currentStepIndex++)
         {
@@ -160,8 +117,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
             while (true)
             {
                 if (stepTimeoutSeconds > 0 && Time.time - startTime > stepTimeoutSeconds) break;
-
-                ApplyPhysicalMovement();
 
                 bool performingExpected = false;
                 if (step.expected_actions != null)
@@ -202,8 +157,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
 
     private void EndTutorialSession(bool success)
     {
-        if (rb != null) rb.constraints = originalConstraints;
-        if (playerControllerToDisable != null) playerControllerToDisable.enabled = true;
         StartCoroutine(CompleteAttempt(currentAttemptId, success));
     }
 
