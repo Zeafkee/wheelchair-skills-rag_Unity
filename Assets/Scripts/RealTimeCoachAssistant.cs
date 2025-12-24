@@ -173,7 +173,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
     IEnumerator RecordInput(string attemptId, int stepNumber, string expectedInput, string actualInput)
     {
         string url = backendBaseUrl + "/attempt/" + attemptId + "/record-input";
-        string json = "{\"step_number\": " + stepNumber + ", \"expected_input\": \"" + expectedInput + ", \"actual_input\": \"" + actualInput + "\"}";
+        string json = "{\"step_number\": " + stepNumber + ", \"expected_input\": \"" + expectedInput + "\", \"actual_input\": \"" + actualInput + "\"}";
         using (UnityWebRequest r = new UnityWebRequest(url, "POST"))
         {
             r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
