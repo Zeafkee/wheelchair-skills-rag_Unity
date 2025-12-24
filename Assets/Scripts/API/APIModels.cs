@@ -141,6 +141,36 @@ namespace WheelchairSkills.API
     }
 
     [Serializable]
+    public class AskPracticeRequest
+    {
+        public string question;
+        public Dictionary<string, string> filters;
+
+        public AskPracticeRequest(string q)
+        {
+            question = q;
+            filters = new Dictionary<string, string>();
+        }
+    }
+
+    [Serializable]
+    public class AskPracticeResponse
+    {
+        public string skill_id;
+        public List<PracticeStep> steps;
+    }
+
+    [Serializable]
+    public class PracticeStep
+    {
+        public int step_number;
+        public string text;
+        public string title;
+        public string cue;
+        public List<string> expected_actions;
+    }
+
+    [Serializable]
     public class ErrorResponse
     {
         public string error;

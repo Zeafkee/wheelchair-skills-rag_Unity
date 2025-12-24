@@ -279,6 +279,38 @@ namespace WheelchairSkills.API
             }
         }
 
+        public IEnumerator GetAskPractice(AskPracticeRequest requestData, Action<AskPracticeResponse> onSuccess, Action<string> onError)
+        {
+            string jsonData = JsonUtility.ToJson(requestData);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+
+            using (UnityWebRequest request = new UnityWebRequest(APIEndpoints.GetAskPracticeEndpoint, "POST"))
+            {
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        AskPracticeResponse response = JsonUtility.FromJson<AskPracticeResponse>(request.downloadHandler.text);
+                        onSuccess?.Invoke(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke($"JSON parse error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    onError?.Invoke($"Request failed: {request.error}");
+                }
+            }
+        }
+
         #endregion
     }
 }

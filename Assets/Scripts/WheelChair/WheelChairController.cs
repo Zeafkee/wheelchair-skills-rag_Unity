@@ -9,6 +9,8 @@ public class WheelchairController : MonoBehaviour
     public float popTorque = 250f;
     public Transform frontCasterTransform; // set in Inspector to front-caster pivot
     public float groundY = 0f;
+    public Transform rearAxlePivot;
+
 
     // runtime
     private bool controlsEnabled = true;

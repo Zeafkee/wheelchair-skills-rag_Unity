@@ -23,5 +23,6 @@ namespace WheelchairSkills.API
         // RAG endpoints
         public static string GetDynamicHintEndpoint => $"{BaseURL}/rag/hint";
         public static string GetContextualHelpEndpoint => $"{BaseURL}/rag/help";
+        public static string GetAskPracticeEndpoint => $"{BaseURL}/ask/practice";
     }
 }

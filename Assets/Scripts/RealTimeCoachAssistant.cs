@@ -4,44 +4,52 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using static RealtimeCoachTrigger;
+using WheelchairSkills.API;
 
-/// <summary>
-/// RealtimeCoachTutorial
-/// - Accepts a parsed AskRAGResponse and runs step-by-step tutorial.
-/// - Calls backend endpoints: start-attempt, record-input, record-error, complete.
-/// - Locks/unlocks player movement if playerControllerToDisable assigned.
-/// - Action detection uses actionChecks (keyboard by default). Replace with telemetry checks as needed.
-/// </summary>
 public class RealtimeCoachTutorial : MonoBehaviour
 {
     [Header("Backend")]
-    [Tooltip("Backend base url for training endpoints, e.g. http://localhost:8000")]
     public string backendBaseUrl = "http://localhost:8000";
-    [Tooltip("ID of the user in backend")]
     public string userId = "sefa001";
 
     [Header("Player / Control")]
-    [Tooltip("Optional: reference to a player controller script to enable/disable movement")]
+    public WheelchairController wheelchair;
     public MonoBehaviour playerControllerToDisable = null;
 
+    [Header("Rotation Settings")]
+    public float rotateSpeed = 120f;
+    public float popAngle = -30f;   // X basılıyken
+    public float uprightAngle = 0f; // V basılıyken
+
     [Header("Behavior")]
-    [Tooltip("Seconds to wait for expected input before timeout (0 = infinite)")]
-    public float stepTimeoutSeconds = 15f;
-    [Tooltip("If true, on wrong input record_error will be sent and allow retry")]
-    public bool recordErrors = true;
+    public float stepTimeoutSeconds = 20f;
 
-    // Internal state
-    private string currentAttemptId = null;
-    private string currentSkillId = null;
-    private Step[] steps = null;
-    private int currentStepIndex = 0;
+    private string currentAttemptId;
+    private string currentSkillId;
+    private List<PracticeStep> steps;
+    private int currentStepIndex;
 
-    // Mapping expected_action -> check function
     private Dictionary<string, Func<bool>> actionChecks;
+
+    private Rigidbody rb;
+    private RigidbodyConstraints originalConstraints;
+
+    // ======================= UNITY =======================
 
     private void Awake()
     {
+        if (wheelchair == null)
+            wheelchair = FindFirstObjectByType<WheelchairController>();
+
+        rb = wheelchair.rb;
+
+        // Tutorial boyunca Y ve Z kilitli olacak
+        originalConstraints = RigidbodyConstraints.FreezeRotationX |
+                              RigidbodyConstraints.FreezeRotationY |
+                              RigidbodyConstraints.FreezeRotationZ;
+
+        rb.constraints = originalConstraints;
+
         BuildDefaultActionChecks();
     }
 
@@ -49,348 +57,206 @@ public class RealtimeCoachTutorial : MonoBehaviour
     {
         actionChecks = new Dictionary<string, Func<bool>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "move_forward", () => Input.GetKey(KeyCode.W) || Input.GetAxis("Vertical") > 0.1f },
-            { "move_backward", () => Input.GetKey(KeyCode.S) || Input.GetAxis("Vertical") < -0.1f },
-            { "turn_left", () => Input.GetKey(KeyCode.A) || Input.GetAxis("Horizontal") < -0.1f },
-            { "turn_right", () => Input.GetKey(KeyCode.D) || Input.GetAxis("Horizontal") > 0.1f },
+            { "move_forward", () => Input.GetKey(KeyCode.W) },
+            { "move_backward", () => Input.GetKey(KeyCode.S) },
+            { "turn_left", () => Input.GetKey(KeyCode.A) },
+            { "turn_right", () => Input.GetKey(KeyCode.D) },
             { "lean_forward", () => Input.GetKey(KeyCode.V) },
             { "lean_backward", () => Input.GetKey(KeyCode.B) },
             { "pop_casters", () => Input.GetKey(KeyCode.X) },
-            { "brake", () => Input.GetKey(KeyCode.Space) },
-            { "any_move", () => Mathf.Abs(Input.GetAxis("Vertical")) > 0.05f || Mathf.Abs(Input.GetAxis("Horizontal")) > 0.05f }
+            { "brake", () => Input.GetKey(KeyCode.Space) }
         };
     }
 
-    /// <summary>
-    /// Public entrypoint. Call with parsed AskRAGResponse.
-    /// </summary>
-    public IEnumerator StartTutorial(AskRAGResponse ragResp)
-    {
-        if (ragResp == null || ragResp.steps == null || ragResp.steps.Length == 0)
-        {
-            Debug.LogError("[Tutorial] StartTutorial called with empty ragResp");
-            yield break;
-        }
+    // ======================= ROTATION =======================
 
-        // set internal state
+    private void AllowOnlyXRotation()
+    {
+        rb.constraints =
+            RigidbodyConstraints.FreezeRotationY |
+            RigidbodyConstraints.FreezeRotationZ;
+    }
+
+    private void LockAllRotations()
+    {
+        rb.constraints =
+            RigidbodyConstraints.FreezeRotationX |
+            RigidbodyConstraints.FreezeRotationY |
+            RigidbodyConstraints.FreezeRotationZ;
+    }
+
+    private void RotateXTo(float targetX)
+    {
+        AllowOnlyXRotation();
+
+        float currentX = rb.rotation.eulerAngles.x;
+        if (currentX > 180f) currentX -= 360f;
+
+        float nextX = Mathf.MoveTowards(
+            currentX,
+            targetX,
+            rotateSpeed * Time.deltaTime
+        );
+
+        rb.MoveRotation(
+            Quaternion.Euler(nextX, rb.rotation.eulerAngles.y, 0f)
+        );
+
+        // Mutlak stabilite
+        rb.angularVelocity = Vector3.zero;
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+    }
+
+    // ======================= TUTORIAL =======================
+
+    public IEnumerator StartTutorial(AskPracticeResponse ragResp)
+    {
+        if (ragResp == null || ragResp.steps == null) yield break;
+
         steps = ragResp.steps;
         currentSkillId = ragResp.skill_id;
 
-        // start attempt on backend
-        yield return StartCoroutine(StartAttempt(userId, currentSkillId));
-        if (string.IsNullOrEmpty(currentAttemptId))
-        {
-            Debug.LogError("[Tutorial] Failed to start attempt on backend.");
-            yield break;
-        }
+        yield return StartCoroutine(StartAttemptCoroutine(userId, currentSkillId));
 
-        // disable player movement if provided
         if (playerControllerToDisable != null)
             playerControllerToDisable.enabled = false;
 
-        // iterate steps
-        for (currentStepIndex = 0; currentStepIndex < steps.Length; currentStepIndex++)
+        for (currentStepIndex = 0; currentStepIndex < steps.Count; currentStepIndex++)
         {
-            Step step = steps[currentStepIndex];
-            Debug.Log($"[Tutorial] STEP #{step.step_number} - {step.text}");
-            if (!string.IsNullOrEmpty(step.cue))
-                Debug.Log($"[Tutorial] Cue: {step.cue}");
+            PracticeStep step = steps[currentStepIndex];
+
+            yield return StartCoroutine(WaitForInputRelease());
 
             bool stepSucceeded = false;
+            bool inputStarted = false;
             float startTime = Time.time;
-            string expectedActionForRecord = null;
-            string actualActionForRecord = null;
 
             while (true)
             {
-                // timeout
-                if (stepTimeoutSeconds > 0 && Time.time - startTime > stepTimeoutSeconds)
-                {
-                    Debug.LogWarning($"[Tutorial] Step #{step.step_number} timed out after {stepTimeoutSeconds} seconds.");
+                if (stepTimeoutSeconds > 0 &&
+                    Time.time - startTime > stepTimeoutSeconds)
                     break;
-                }
 
-                // check expected actions
-                if (step.expected_actions != null && step.expected_actions.Length > 0)
+                bool xPressed = Input.GetKey(KeyCode.X);
+                bool vPressed = Input.GetKey(KeyCode.V);
+
+                if (xPressed)
                 {
-                    bool anyDetected = false;
-                    foreach (var exp in step.expected_actions)
-                    {
-                        if (IsActionPerformed(exp))
-                        {
-                            anyDetected = true;
-                            expectedActionForRecord = exp;
-                            actualActionForRecord = exp;
-                            break;
-                        }
-                    }
-
-                    if (anyDetected)
-                    {
-                        stepSucceeded = true;
-                        break;
-                    }
-
-                    // Check for wrong inputs (other mapped actions)
-                    foreach (var kv in actionChecks)
-                    {
-                        string actionName = kv.Key;
-                        if (Array.Exists(step.expected_actions, a => string.Equals(a, actionName, StringComparison.OrdinalIgnoreCase)))
-                            continue; // allowed
-
-                        if (kv.Value != null && kv.Value.Invoke())
-                        {
-                            actualActionForRecord = actionName;
-                            expectedActionForRecord = step.expected_actions.Length > 0 ? step.expected_actions[0] : null;
-                            Debug.Log($"[Tutorial] Wrong input detected: {actionName} (expected: {string.Join(",", step.expected_actions)})");
-
-                            if (recordErrors)
-                            {
-                                yield return StartCoroutine(RecordInput(currentAttemptId, step.step_number, expectedActionForRecord ?? "", actualActionForRecord ?? ""));
-                                yield return StartCoroutine(RecordError(currentAttemptId, step.step_number, "wrong_input", expectedActionForRecord ?? "", actualActionForRecord ?? ""));
-                            }
-                            // allow retry
-                        }
-                    }
+                    RotateXTo(popAngle);
+                }
+                else if (vPressed)
+                {
+                    RotateXTo(uprightAngle);
                 }
                 else
                 {
-                    // no expected actions provided -> accept any movement
-                    if (IsAnyActionPerformed())
+                    RotateXTo(uprightAngle);
+
+                    float x = rb.rotation.eulerAngles.x;
+                    if (x > 180f) x -= 360f;
+
+                    if (Mathf.Abs(x) < 0.5f)
+                        LockAllRotations();
+                }
+
+                bool performingExpected = false;
+
+                if (step.expected_actions != null)
+                {
+                    foreach (var exp in step.expected_actions)
                     {
-                        stepSucceeded = true;
-                        expectedActionForRecord = "any_move";
-                        actualActionForRecord = "any_move";
-                        break;
+                        if (actionChecks.ContainsKey(exp) &&
+                            actionChecks[exp]())
+                        {
+                            performingExpected = true;
+                            inputStarted = true;
+                            stepSucceeded = true;
+                            break;
+                        }
                     }
                 }
 
-                yield return null;
-            } // waiting loop
+                if (!performingExpected && inputStarted)
+                    break;
 
-            if (stepSucceeded)
-            {
-                Debug.Log($"[Tutorial] Step #{step.step_number} succeeded.");
-                yield return StartCoroutine(RecordInput(currentAttemptId, step.step_number, expectedActionForRecord ?? "", actualActionForRecord ?? ""));
+                yield return null;
             }
-            else
+
+            if (!stepSucceeded)
             {
-                Debug.LogWarning($"[Tutorial] Step #{step.step_number} failed/timed out. Marking attempt as failed.");
-                yield return StartCoroutine(CompleteAttempt(currentAttemptId, false));
-                if (playerControllerToDisable != null)
-                    playerControllerToDisable.enabled = true;
+                EndTutorial(false);
                 yield break;
             }
-        } // steps loop
+        }
 
-        // completed all
-        Debug.Log("[Tutorial] All steps completed. Marking attempt success.");
-        yield return StartCoroutine(CompleteAttempt(currentAttemptId, true));
+        EndTutorial(true);
+    }
+
+    private void EndTutorial(bool success)
+    {
+        LockAllRotations();
 
         if (playerControllerToDisable != null)
             playerControllerToDisable.enabled = true;
+
+        StartCoroutine(CompleteAttemptCoroutine(currentAttemptId, success));
     }
 
-    // ---------------- Backend helpers ----------------
-    IEnumerator StartAttempt(string userId, string skillId)
+    // ======================= BACKEND =======================
+
+    IEnumerator StartAttemptCoroutine(string uId, string sId)
     {
-        string url = $"{backendBaseUrl}/user/{userId}/skill/{skillId}/start-attempt";
-        var payloadJson = "{}";
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(payloadJson);
+        string url = $"{backendBaseUrl}/user/{uId}/skill/{sId}/start-attempt";
 
-        UnityWebRequest r = new UnityWebRequest(url, "POST");
-        r.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        r.downloadHandler = new DownloadHandlerBuffer();
-        r.SetRequestHeader("Content-Type", "application/json");
 
-        yield return r.SendWebRequest();
 
-        if (r.result != UnityWebRequest.Result.Success)
+        using (UnityWebRequest r = new UnityWebRequest(url, "POST"))
         {
-            Debug.LogError("[Tutorial] start-attempt failed: " + r.error + " resp: " + r.downloadHandler.text);
-            currentAttemptId = null;
-            yield break;
-        }
+            r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes("{}"));
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.SetRequestHeader("Content-Type", "application/json");
 
-        string txt = r.downloadHandler.text;
-        Debug.Log("[Tutorial] start-attempt resp: " + txt);
+            yield return r.SendWebRequest();
 
-        try
-        {
-            var wrapper = JsonUtility.FromJson<StartAttemptResponse>(txt);
-            if (wrapper != null && !string.IsNullOrEmpty(wrapper.attempt_id))
-            {
-                currentAttemptId = wrapper.attempt_id;
-            }
-            else
-            {
-                currentAttemptId = ManualExtractField(txt, "attempt_id");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError("[Tutorial] parse start-attempt response error: " + ex);
-            currentAttemptId = ManualExtractField(r.downloadHandler.text, "attempt_id");
+            if (r.result == UnityWebRequest.Result.Success)
+                currentAttemptId = ManualExtractField(r.downloadHandler.text, "attempt_id");
         }
     }
 
-    [Serializable]
-    private class StartAttemptResponse
+    IEnumerator CompleteAttemptCoroutine(string attemptId, bool success)
     {
-        public bool success;
-        public string attempt_id;
-        public string skill_id;
-    }
+        if (string.IsNullOrEmpty(attemptId)) yield break;
 
-    IEnumerator RecordInput(string attemptId, int stepNumber, string expectedInput, string actualInput)
-    {
-        string url = $"{backendBaseUrl}/attempt/{attemptId}/record-input";
-        var payload = new RecordInputPayload { step_number = stepNumber, expected_input = expectedInput, actual_input = actualInput };
-        string json = JsonUtility.ToJson(payload);
-
-        UnityWebRequest r = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-        r.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        r.downloadHandler = new DownloadHandlerBuffer();
-        r.SetRequestHeader("Content-Type", "application/json");
-        yield return r.SendWebRequest();
-
-        if (r.result != UnityWebRequest.Result.Success)
-        {
-            Debug.LogError($"[Tutorial] record-input failed: {r.error} resp:{r.downloadHandler.text}");
-        }
-        else
-        {
-            Debug.Log("[Tutorial] record-input OK: " + r.downloadHandler.text);
-        }
-    }
-
-    [Serializable]
-    private class RecordInputPayload
-    {
-        public int step_number;
-        public string expected_input;
-        public string actual_input;
-    }
-
-    IEnumerator RecordError(string attemptId, int stepNumber, string errorType, string expectedAction, string actualAction)
-    {
-        string url = $"{backendBaseUrl}/attempt/{attemptId}/record-error";
-        var payload = new RecordErrorPayload { step_number = stepNumber, error_type = errorType, expected_action = expectedAction, actual_action = actualAction };
-        string json = JsonUtility.ToJson(payload);
-
-        UnityWebRequest r = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-        r.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        r.downloadHandler = new DownloadHandlerBuffer();
-        r.SetRequestHeader("Content-Type", "application/json");
-        yield return r.SendWebRequest();
-
-        if (r.result != UnityWebRequest.Result.Success)
-        {
-            Debug.LogError($"[Tutorial] record-error failed: {r.error} resp:{r.downloadHandler.text}");
-        }
-        else
-        {
-            Debug.Log("[Tutorial] record-error OK: " + r.downloadHandler.text);
-        }
-    }
-
-    [Serializable]
-    private class RecordErrorPayload
-    {
-        public int step_number;
-        public string error_type;
-        public string expected_action;
-        public string actual_action;
-    }
-
-    IEnumerator CompleteAttempt(string attemptId, bool success)
-    {
         string url = $"{backendBaseUrl}/attempt/{attemptId}/complete";
-        var payload = new CompleteAttemptPayload { success = success };
-        string json = JsonUtility.ToJson(payload);
+        string json = "{\"success\": " + (success ? "true" : "false") + "}";
 
-        UnityWebRequest r = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-        r.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        r.downloadHandler = new DownloadHandlerBuffer();
-        r.SetRequestHeader("Content-Type", "application/json");
-        yield return r.SendWebRequest();
-
-        if (r.result != UnityWebRequest.Result.Success)
+        using (UnityWebRequest r = new UnityWebRequest(url, "POST"))
         {
-            Debug.LogError($"[Tutorial] complete attempt failed: {r.error} resp:{r.downloadHandler.text}");
-        }
-        else
-        {
-            Debug.Log("[Tutorial] complete attempt OK: " + r.downloadHandler.text);
+            r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.SetRequestHeader("Content-Type", "application/json");
+            yield return r.SendWebRequest();
         }
     }
 
-    [Serializable]
-    private class CompleteAttemptPayload
-    {
-        public bool success;
-    }
+    // ======================= UTILS =======================
 
-    // ---------------- Utilities ----------------
-    private bool IsActionPerformed(string action)
+    private IEnumerator WaitForInputRelease()
     {
-        if (string.IsNullOrEmpty(action)) return false;
-        if (actionChecks.TryGetValue(action, out Func<bool> checker))
-        {
-            try { return checker(); }
-            catch { return false; }
-        }
-        if (actionChecks.TryGetValue("any_move", out Func<bool> anyc))
-        {
-            return anyc();
-        }
-        return false;
-    }
+        while (Input.anyKey)
+            yield return null;
 
-    private bool IsAnyActionPerformed()
-    {
-        foreach (var kv in actionChecks)
-        {
-            try
-            {
-                if (kv.Value != null && kv.Value.Invoke())
-                    return true;
-            }
-            catch { }
-        }
-        return false;
-    }
-
-    private AskRAGResponse ManualParseResponse(string json)
-    {
-        try
-        {
-            var obj = JsonUtility.FromJson<MinimalWrapper>(json);
-            if (obj != null && obj.steps != null)
-                return new AskRAGResponse { skill_id = obj.skill_id, steps = obj.steps };
-        }
-        catch { }
-        return null;
-    }
-
-    [Serializable]
-    private class MinimalWrapper
-    {
-        public string skill_id;
-        public Step[] steps;
+        yield return new WaitForSeconds(0.1f);
     }
 
     private string ManualExtractField(string json, string key)
     {
-        string pattern = $"\"{key}\":\"";
-        int i = json.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
-        if (i < 0) return null;
+        char q = (char)34;
+        string pattern = q + key + q + ":" + q;
+        int i = json.IndexOf(pattern);
+        if (i < 0) return "";
         i += pattern.Length;
-        int j = json.IndexOf('"', i);
-        if (j < 0) return null;
-        return json.Substring(i, j - i);
+        int j = json.IndexOf(q, i);
+        return j > i ? json.Substring(i, j - i) : "";
     }
 }

@@ -12914,7 +12914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2346236693461991987, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.411
+      value: 3.064
       objectReference: {fileID: 0}
     - target: {fileID: 2346236693461991987, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -12948,6 +12948,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3040802174343239706, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Size.x
+      value: 0.7626823
+      objectReference: {fileID: 0}
+    - target: {fileID: 3040802174343239706, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Size.y
+      value: 1.098439
+      objectReference: {fileID: 0}
+    - target: {fileID: 3040802174343239706, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Center.x
+      value: 0.014362872
+      objectReference: {fileID: 0}
+    - target: {fileID: 3040802174343239706, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Center.y
+      value: 0.6036273
+      objectReference: {fileID: 0}
     - target: {fileID: 3153735228233242761, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       propertyPath: m_Name
       value: WhellChair
@@ -12956,12 +12972,19 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 4596609343761911388, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2346236693461991987, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1796579501}
+    - targetCorrespondingSourceObject: {fileID: 2346236693461991987, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 844490905}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3153735228233242761, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       insertIndex: -1
@@ -13119,6 +13142,37 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 250964570}
   m_SourcePrefab: {fileID: 100100000, guid: a55e8b944b49e774899ecb13192840e5, type: 3}
+--- !u!1 &844490904
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 844490905}
+  m_Layer: 6
+  m_Name: BackAxlePivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &844490905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 844490904}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0.329}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 930632608}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &848022930 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3591644860445115680, guid: a55e8b944b49e774899ecb13192840e5, type: 3}
@@ -14713,21 +14767,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WheelchairController
   rb: {fileID: 930632610}
-  baseDriveForce: 350
-  popTorque: 250
+  baseDriveForce: 1
+  popTorque: 1
   frontCasterTransform: {fileID: 1796579501}
   groundY: 0
---- !u!114 &930632615 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2315493291279652260, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
-  m_PrefabInstance: {fileID: 820019599}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 930632600}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5bb5e13040d40740b4c2b9abbd42297, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  rearAxlePivot: {fileID: 844490905}
 --- !u!1001 &931173476
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -32594,8 +32638,8 @@ Transform:
   m_GameObject: {fileID: 1857029228}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.3, y: 2.34, z: 38.0276}
-  m_LocalScale: {x: 8.866645, y: 0.41546512, z: 3.4847505}
+  m_LocalPosition: {x: 8.3, y: 2.34, z: 38.0284}
+  m_LocalScale: {x: 8.866645, y: 0.2329139, z: 3.4864929}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -32614,9 +32658,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RealtimeCoachTrigger
   questionToAsk: I am in a manual wheelchair and I am facing a sidewalk. How should
     I get on the sidewalk?
-  ragEndpoint: http://localhost:8000/ask/practice
-  tutorialPrefab: {fileID: 2042759780}
-  backendBaseUrl: http://localhost:8000
+  tutorialPrefab: {fileID: 9138743886814900009, guid: d728a450745b91249aa9641c6afdbfe5, type: 3}
   userId: sefa001
 --- !u!1001 &1858480970
 PrefabInstance:
@@ -35789,55 +35831,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -4097844776799219605, guid: a179947a5e31cc0428e706c0841d3277, type: 3}
---- !u!1 &2042759780
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2042759782}
-  - component: {fileID: 2042759781}
-  m_Layer: 0
-  m_Name: Tutorial
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2042759781
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2042759780}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e14517184fef6348be965c8f0953e82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealtimeCoachTutorial
-  backendBaseUrl: http://localhost:8000
-  userId: sefa001
-  playerControllerToDisable: {fileID: 930632615}
-  stepTimeoutSeconds: 15
-  recordErrors: 1
---- !u!4 &2042759782
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2042759780}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.27023, y: 3.33576, z: 34.45399}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2050609435 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3591644860445115680, guid: a55e8b944b49e774899ecb13192840e5, type: 3}
@@ -38246,4 +38239,3 @@ SceneRoots:
   - {fileID: 695174890}
   - {fileID: 1289055703}
   - {fileID: 1857029233}
-  - {fileID: 2042759782}
