@@ -114,14 +114,13 @@ public class RealtimeCoachTutorial : MonoBehaviour
             {
                 if (stepTimeoutSeconds > 0 && Time.time - startTime > stepTimeoutSeconds) break;
 
-                bool performingExpected = false;
+                // 1. Check if expected actions are performed
                 if (step.expected_actions != null)
                 {
                     foreach (var exp in step.expected_actions)
                     {
                         if (IsActionPerformed(exp))
                         {
-                            performingExpected = true;
                             inputStarted = true;
                             stepSucceeded = true;
                             expectedActionForRecord = exp;
@@ -132,6 +131,29 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 }
 
                 if (stepSucceeded) break;
+
+                // 2. Check if WRONG actions are performed
+                foreach (var actionName in actionChecks.Keys)
+                {
+                    // Skip if it's one of the expected ones (already checked)
+                    if (step.expected_actions != null && step.expected_actions.Contains(actionName)) continue;
+
+                    if (IsActionPerformed(actionName))
+                    {
+                        // Wrong action detected!
+                        inputStarted = true;
+                        stepSucceeded = false;
+                        expectedActionForRecord = (step.expected_actions != null && step.expected_actions.Count > 0) ? step.expected_actions[0] : "unknown";
+                        actualActionForRecord = actionName;
+                        
+                        Debug.LogWarning($"[Tutorial] WRONG ACTION: {actionName} (Expected: {expectedActionForRecord})");
+                        
+                        yield return StartCoroutine(RecordInput(currentAttemptId, step.step_number, expectedActionForRecord, actualActionForRecord));
+                        EndTutorialSession(false);
+                        yield break;
+                    }
+                }
+
                 yield return null;
             }
 
