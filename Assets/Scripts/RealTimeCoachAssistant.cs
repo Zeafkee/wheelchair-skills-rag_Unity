@@ -57,8 +57,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
             { "move_backward", "Press S" },
             { "turn_left", "Press A" },
             { "turn_right", "Press D" },
-            { "lean_forward", "Press V" },
-            { "lean_backward", "Press B" },
             { "pop_casters", "Press X" },
             { "brake", "Press SPACE" }
         };
@@ -72,8 +70,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
             { "move_backward", () => Input.GetKey(KeyCode.S) },
             { "turn_left", () => Input.GetKey(KeyCode.A) },
             { "turn_right", () => Input.GetKey(KeyCode.D) },
-            { "lean_forward", () => Input.GetKey(KeyCode.V) },
-            { "lean_backward", () => Input.GetKey(KeyCode.B) },
             { "pop_casters", () => Input.GetKey(KeyCode.X) },
             { "brake", () => Input.GetKey(KeyCode.Space) }
         };
@@ -135,7 +131,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                     }
                 }
 
-                if (!performingExpected && inputStarted) break;
+                if (stepSucceeded) break;
                 yield return null;
             }
 

@@ -43,7 +43,7 @@ public class RealtimeCoachTrigger : MonoBehaviour
             return;
         }
 
-        Debug.Log("[Trigger] RAG başarılı, tutorial başlıyor. Adım sayısı: " + ragResp.steps.Count);
+        Debug.Log("[Trigger] RAG başarılı, tutorial başlıyor. Adım sayısı: " + ragResp.steps.Count + "skill id is : "+ragResp.skill_id );
         
         tutorialInstance.userId = userId;
         StartCoroutine(tutorialInstance.StartTutorial(ragResp));
