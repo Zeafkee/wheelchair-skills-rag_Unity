@@ -1,18 +1,17 @@
-﻿using System.Text;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using System;
 using System.Collections;
 using WheelchairSkills.API;
 
-
 public class RealtimeCoachTrigger : MonoBehaviour
 {
     [TextArea]
-    public string questionToAsk = "I am in a manual wheelchair and I am facing a curb. How should I safely get up?";
+    public string questionToAsk = "I am in a manual wheelchair and I am facing a sidewalk. How should I get on the sidewalk?";
 
-    [Tooltip("Assign a prefab that contains RealtimeCoachTutorial component")]
-    public GameObject tutorialPrefab;
+    [Tooltip("Sahnede hazır duran RealtimeCoachTutorial referansı")]
+    public RealtimeCoachTutorial tutorialInstance;
 
     [Tooltip("User id to pass to the tutorial backend calls")]
     public string userId = "sefa001";
@@ -23,8 +22,14 @@ public class RealtimeCoachTrigger : MonoBehaviour
     {
         if (hasAsked) return;
         if (!other.CompareTag("Player")) return;
-        hasAsked = true;
         
+        if (tutorialInstance == null)
+        {
+            Debug.LogError("[Trigger] tutorialInstance sahnede atanmamış!");
+            return;
+        }
+
+        hasAsked = true;
         var request = new AskPracticeRequest(questionToAsk);
         StartCoroutine(APIClient.Instance.GetAskPractice(request, OnRagSuccess, OnRagError));
     }
@@ -33,35 +38,20 @@ public class RealtimeCoachTrigger : MonoBehaviour
     {
         if (ragResp == null || ragResp.steps == null || ragResp.steps.Count == 0)
         {
-            Debug.LogError("[Trigger] No steps in RAG response.");
+            Debug.LogError("[Trigger] RAG yanıtında adım bulunamadı.");
+            hasAsked = false;
             return;
         }
 
-        if (tutorialPrefab == null)
-        {
-            Debug.LogError("[Trigger] tutorialPrefab not assigned.");
-            return;
-        }
-
-        // instantiate tutorial prefab and configure it
-        var go = Instantiate(tutorialPrefab);
-        var tutorial = go.GetComponent<RealtimeCoachTutorial>();
-        if (tutorial == null)
-        {
-            Debug.LogError("[Trigger] tutorialPrefab missing RealtimeCoachTutorial component.");
-            return;
-        }
-
-        // copy config
-        tutorial.userId = userId;
-
-        // start the tutorial using rag response
-        StartCoroutine(tutorial.StartTutorial(ragResp));
+        Debug.Log("[Trigger] RAG başarılı, tutorial başlıyor. Adım sayısı: " + ragResp.steps.Count);
+        
+        tutorialInstance.userId = userId;
+        StartCoroutine(tutorialInstance.StartTutorial(ragResp));
     }
 
     private void OnRagError(string error)
     {
-        Debug.LogError($"[Trigger] RAG Error: {error}");
-        hasAsked = false; // Allow retry on error
+        Debug.LogError($"[Trigger] RAG Hatası: {error}");
+        hasAsked = false; 
     }
 }
