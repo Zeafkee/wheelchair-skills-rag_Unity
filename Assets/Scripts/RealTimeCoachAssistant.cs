@@ -130,13 +130,9 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 && step.expected_actions != null && step.expected_actions.Count > 0)
             {
                 // Check if previous action matches any current expected action
-                foreach (var expectedAction in step.expected_actions)
+                if (step.expected_actions.Any(action => previousStepAction.Equals(action, StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (previousStepAction.Equals(expectedAction, StringComparison.OrdinalIgnoreCase))
-                    {
-                        currentStepRequiredHold = requiredHoldDuration * 2f;
-                        break;
-                    }
+                    currentStepRequiredHold = requiredHoldDuration * 2f;
                 }
             }
             
@@ -151,7 +147,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
             {
                 if (!string.IsNullOrEmpty(step.cue))
                 {
-                    stepCueText.text = "💡 " + step.cue;
+                    stepCueText.text = $"💡 {step.cue}";
                 }
                 else
                 {
@@ -242,8 +238,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         if (currentHoldingAction == null)
                         {
                             // Start holding
-                            currentHoldingAction = pressedExpectedAction;
-                            holdStartTime = Time.time;
+                            StartHoldTracking(pressedExpectedAction);
                         }
                         else if (currentHoldingAction == pressedExpectedAction)
                         {
@@ -275,8 +270,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                             // User switched to a different expected action - reset and start over
                             Debug.Log($"[Tutorial] Action switched from {currentHoldingAction} to {pressedExpectedAction} (was at {currentHoldTime:F1}s), resetting hold");
                             ResetHoldTracking();
-                            currentHoldingAction = pressedExpectedAction;
-                            holdStartTime = Time.time;
+                            StartHoldTracking(pressedExpectedAction);
                         }
                     }
                     else
@@ -386,6 +380,12 @@ public class RealtimeCoachTutorial : MonoBehaviour
         {
             holdProgressBar.fillAmount = 0f;
         }
+    }
+
+    private void StartHoldTracking(string action)
+    {
+        currentHoldingAction = action;
+        holdStartTime = Time.time;
     }
 
     private IEnumerator WaitForInputRelease()
