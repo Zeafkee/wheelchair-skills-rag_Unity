@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.UI;
+using TMPro;
 using WheelchairSkills.API;
 
 public class RealtimeCoachTutorial : MonoBehaviour
@@ -26,6 +28,17 @@ public class RealtimeCoachTutorial : MonoBehaviour
     public float stepTimeoutSeconds = 15f;
     public bool recordErrors = true;
 
+    [Header("UI References")]
+    public TextMeshProUGUI stepInstructionText;
+    public TextMeshProUGUI stepCueText;
+    public TextMeshProUGUI stepInputHintText;
+    public TextMeshProUGUI holdProgressText;
+    public Image holdProgressBar;
+
+    [Header("Hold Settings")]
+    public float requiredHoldDuration = 1.0f;
+    public bool cumulativeHoldForSameAction = true;
+
     private string currentAttemptId = null;
     private string currentSkillId = null;
     private List<PracticeStep> steps = null;
@@ -34,6 +47,12 @@ public class RealtimeCoachTutorial : MonoBehaviour
     private Dictionary<string, Func<bool>> actionChecks;
     private Dictionary<string, string> actionToKeyMsg;
     private Rigidbody rb;
+
+    // Hold duration tracking
+    private float currentHoldTime = 0f;
+    private string currentHoldingAction = null;
+    private string previousStepAction = null;
+    private float currentStepRequiredHold = 0f;
 
     private void Awake()
     {
@@ -81,6 +100,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
         
         steps = ragResp.steps;
         currentSkillId = ragResp.skill_id;
+        previousStepAction = null;
 
         yield return StartCoroutine(StartAttempt(userId, currentSkillId));
         if (string.IsNullOrEmpty(currentAttemptId)) yield break;
@@ -88,6 +108,62 @@ public class RealtimeCoachTutorial : MonoBehaviour
         for (currentStepIndex = 0; currentStepIndex < steps.Count; currentStepIndex++)
         {
             PracticeStep step = steps[currentStepIndex];
+            
+            // Determine hold duration for this step
+            string currentExpectedAction = (step.expected_actions != null && step.expected_actions.Count > 0) 
+                ? step.expected_actions[0] : null;
+            
+            currentStepRequiredHold = requiredHoldDuration;
+            
+            // If cumulative and same action as previous, increase hold duration
+            if (cumulativeHoldForSameAction && !string.IsNullOrEmpty(previousStepAction) 
+                && !string.IsNullOrEmpty(currentExpectedAction)
+                && previousStepAction.Equals(currentExpectedAction, StringComparison.OrdinalIgnoreCase))
+            {
+                currentStepRequiredHold = requiredHoldDuration * 2f;
+            }
+            
+            // Update UI - Instruction
+            if (stepInstructionText != null)
+            {
+                stepInstructionText.text = step.text;
+            }
+            
+            // Update UI - Cue/Note
+            if (stepCueText != null)
+            {
+                if (!string.IsNullOrEmpty(step.cue))
+                {
+                    stepCueText.text = "💡 " + step.cue;
+                }
+                else
+                {
+                    stepCueText.text = "";
+                }
+            }
+            
+            // Update UI - Input Hint
+            if (stepInputHintText != null && step.expected_actions != null && step.expected_actions.Count > 0)
+            {
+                List<string> keyHints = new List<string>();
+                foreach(var act in step.expected_actions)
+                {
+                    string keyName = GetKeyNameForAction(act);
+                    keyHints.Add(keyName);
+                }
+                string keysDisplay = string.Join(" OR ", keyHints);
+                stepInputHintText.text = $"Hold {keysDisplay} for {currentStepRequiredHold:F1}s";
+            }
+            
+            // Reset hold progress UI
+            if (holdProgressText != null)
+            {
+                holdProgressText.text = "";
+            }
+            if (holdProgressBar != null)
+            {
+                holdProgressBar.fillAmount = 0f;
+            }
             
             string inputHint = "";
             if (step.expected_actions != null && step.expected_actions.Count > 0)
@@ -101,8 +177,16 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 inputHint = " -> [ " + string.Join(" OR ", keys) + " ]";
             }
             Debug.Log($"[Tutorial] STEP #{step.step_number}: {step.text}{inputHint}");
+            if (!string.IsNullOrEmpty(step.cue))
+            {
+                Debug.Log($"[Tutorial] CUE: {step.cue}");
+            }
             
             yield return StartCoroutine(WaitForInputRelease());
+
+            // Reset hold tracking
+            currentHoldTime = 0f;
+            currentHoldingAction = null;
 
             bool stepSucceeded = false;
             bool inputStarted = false;
@@ -114,33 +198,16 @@ public class RealtimeCoachTutorial : MonoBehaviour
             {
                 if (stepTimeoutSeconds > 0 && Time.time - startTime > stepTimeoutSeconds) break;
 
-                // 1. Check if expected actions are performed
-                if (step.expected_actions != null)
-                {
-                    foreach (var exp in step.expected_actions)
-                    {
-                        if (IsActionPerformed(exp))
-                        {
-                            inputStarted = true;
-                            stepSucceeded = true;
-                            expectedActionForRecord = exp;
-                            actualActionForRecord = exp;
-                            break;
-                        }
-                    }
-                }
-
-                if (stepSucceeded) break;
-
-                // 2. Check if WRONG actions are performed
+                // 1. Check if WRONG actions are performed (before checking expected)
+                bool wrongActionDetected = false;
                 foreach (var actionName in actionChecks.Keys)
                 {
-                    // Skip if it's one of the expected ones (already checked)
+                    // Skip if it's one of the expected ones
                     if (step.expected_actions != null && step.expected_actions.Contains(actionName)) continue;
 
                     if (IsActionPerformed(actionName))
                     {
-                        // Wrong action detected!
+                        // Wrong action detected - IMMEDIATE FAIL
                         inputStarted = true;
                         stepSucceeded = false;
                         expectedActionForRecord = (step.expected_actions != null && step.expected_actions.Count > 0) ? step.expected_actions[0] : "unknown";
@@ -154,6 +221,80 @@ public class RealtimeCoachTutorial : MonoBehaviour
                     }
                 }
 
+                // 2. Check if expected actions are being held
+                if (step.expected_actions != null)
+                {
+                    bool anyExpectedKeyPressed = false;
+                    string pressedExpectedAction = null;
+                    
+                    foreach (var exp in step.expected_actions)
+                    {
+                        if (IsActionPerformed(exp))
+                        {
+                            anyExpectedKeyPressed = true;
+                            pressedExpectedAction = exp;
+                            break;
+                        }
+                    }
+                    
+                    if (anyExpectedKeyPressed)
+                    {
+                        // Start or continue holding
+                        if (currentHoldingAction == null)
+                        {
+                            currentHoldingAction = pressedExpectedAction;
+                            currentHoldTime = 0f;
+                        }
+                        else if (currentHoldingAction == pressedExpectedAction)
+                        {
+                            // Continue holding the same key
+                            currentHoldTime += Time.deltaTime;
+                            
+                            // Update hold progress UI
+                            if (holdProgressText != null)
+                            {
+                                holdProgressText.text = $"Hold: {currentHoldTime:F1}s / {currentStepRequiredHold:F1}s";
+                            }
+                            if (holdProgressBar != null)
+                            {
+                                holdProgressBar.fillAmount = Mathf.Clamp01(currentHoldTime / currentStepRequiredHold);
+                            }
+                            
+                            // Check if hold duration met
+                            if (currentHoldTime >= currentStepRequiredHold)
+                            {
+                                inputStarted = true;
+                                stepSucceeded = true;
+                                expectedActionForRecord = pressedExpectedAction;
+                                actualActionForRecord = pressedExpectedAction;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Key released - reset hold
+                        if (currentHoldingAction != null)
+                        {
+                            Debug.Log($"[Tutorial] Key released, resetting hold (was at {currentHoldTime:F1}s)");
+                            currentHoldTime = 0f;
+                            currentHoldingAction = null;
+                            
+                            // Reset UI
+                            if (holdProgressText != null)
+                            {
+                                holdProgressText.text = "";
+                            }
+                            if (holdProgressBar != null)
+                            {
+                                holdProgressBar.fillAmount = 0f;
+                            }
+                        }
+                    }
+                }
+
+                if (stepSucceeded) break;
+
                 yield return null;
             }
 
@@ -161,6 +302,9 @@ public class RealtimeCoachTutorial : MonoBehaviour
             {
                 Debug.Log($"[Tutorial] Step #{step.step_number} complete!");
                 yield return StartCoroutine(RecordInput(currentAttemptId, step.step_number, expectedActionForRecord, actualActionForRecord));
+                
+                // Store the action for next step's cumulative check
+                previousStepAction = actualActionForRecord;
             }
             else
             {
@@ -220,6 +364,25 @@ public class RealtimeCoachTutorial : MonoBehaviour
     }
 
     private bool IsActionPerformed(string action) => actionChecks.ContainsKey(action) && actionChecks[action]();
+
+    private string GetKeyNameForAction(string action)
+    {
+        Dictionary<string, string> actionToKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "move_forward", "W" },
+            { "move_backward", "S" },
+            { "turn_left", "A" },
+            { "turn_right", "D" },
+            { "pop_casters", "X" },
+            { "brake", "SPACE" }
+        };
+        
+        if (actionToKey.TryGetValue(action, out string keyName))
+        {
+            return keyName;
+        }
+        return action;
+    }
 
     private IEnumerator WaitForInputRelease()
     {
