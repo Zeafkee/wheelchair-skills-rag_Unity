@@ -211,6 +211,14 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         Debug.LogWarning($"[Tutorial] WRONG ACTION: {actionName} (Expected: {expectedActionForRecord})");
                         
                         yield return StartCoroutine(RecordInput(currentAttemptId, step.step_number, expectedActionForRecord, actualActionForRecord));
+                        
+                        // Record error if enabled
+                        if (recordErrors)
+                        {
+                            string errorType = DetermineErrorType(expectedActionForRecord, actualActionForRecord);
+                            yield return StartCoroutine(RecordError(currentAttemptId, step.step_number, errorType, expectedActionForRecord, actualActionForRecord));
+                        }
+                        
                         EndTutorialSession(false);
                         yield break;
                     }
@@ -340,6 +348,77 @@ public class RealtimeCoachTutorial : MonoBehaviour
             r.SetRequestHeader("Content-Type", "application/json");
             yield return r.SendWebRequest();
         }
+    }
+
+    IEnumerator RecordError(string attemptId, int stepNumber, string errorType, string expectedAction, string actualAction)
+    {
+        string url = backendBaseUrl + "/attempt/" + attemptId + "/record-error";
+        string json = "{" +
+            "\"step_number\": " + stepNumber + ", " +
+            "\"error_type\": \"" + errorType + "\", " +
+            "\"expected_action\": \"" + expectedAction + "\", " +
+            "\"actual_action\": \"" + actualAction + "\"" +
+        "}";
+        using (UnityWebRequest r = new UnityWebRequest(url, "POST"))
+        {
+            r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.SetRequestHeader("Content-Type", "application/json");
+            yield return r.SendWebRequest();
+            
+            if (r.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"[Tutorial] Error recorded: {errorType}");
+            }
+            else
+            {
+                Debug.LogWarning($"[Tutorial] Failed to record error: {r.error}");
+            }
+        }
+    }
+
+    private string DetermineErrorType(string expected, string actual)
+    {
+        // Normalize to lowercase for comparison
+        string exp = expected.ToLower();
+        string act = actual.ToLower();
+        
+        // wrong_direction: move_forward <-> move_backward
+        if ((exp == "move_forward" && act == "move_backward") || 
+            (exp == "move_backward" && act == "move_forward"))
+        {
+            return "wrong_direction";
+        }
+        
+        // wrong_turn_direction: turn_left <-> turn_right
+        if ((exp == "turn_left" && act == "turn_right") || 
+            (exp == "turn_right" && act == "turn_left"))
+        {
+            return "wrong_turn_direction";
+        }
+        
+        // stopped_instead_of_moving: expected move, got brake
+        if ((exp == "move_forward" || exp == "move_backward" || exp == "turn_left" || exp == "turn_right") && 
+            act == "brake")
+        {
+            return "stopped_instead_of_moving";
+        }
+        
+        // moved_instead_of_stopping: expected brake, got move
+        if (exp == "brake" && 
+            (act == "move_forward" || act == "move_backward" || act == "turn_left" || act == "turn_right"))
+        {
+            return "moved_instead_of_stopping";
+        }
+        
+        // missed_pop_casters: expected pop_casters, got something else
+        if (exp == "pop_casters" && act != "pop_casters")
+        {
+            return "missed_pop_casters";
+        }
+        
+        // wrong_input: default case
+        return "wrong_input";
     }
 
     IEnumerator CompleteAttempt(string attemptId, bool success)
