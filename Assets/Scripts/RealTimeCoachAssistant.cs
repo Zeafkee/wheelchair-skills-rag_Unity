@@ -123,13 +123,13 @@ public class RealtimeCoachTutorial : MonoBehaviour
             PracticeStep step = steps[currentStepIndex];
             
             // Determine hold duration for this step
-            // Check if previous action matches any of the current expected actions
+            // Check if any current expected actions match the previous action
             currentStepRequiredHold = requiredHoldDuration;
             
             if (cumulativeHoldForSameAction && !string.IsNullOrEmpty(previousStepAction) 
                 && step.expected_actions != null && step.expected_actions.Count > 0)
             {
-                // Check if previous action matches any current expected action
+                // If any current expected action matches previous action, increase hold duration
                 if (step.expected_actions.Any(action => previousStepAction.Equals(action, StringComparison.OrdinalIgnoreCase)))
                 {
                     currentStepRequiredHold = requiredHoldDuration * 2f;
@@ -268,7 +268,8 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         else
                         {
                             // User switched to a different expected action - reset and start over
-                            Debug.Log($"[Tutorial] Action switched from {currentHoldingAction} to {pressedExpectedAction} (was at {currentHoldTime:F1}s), resetting hold");
+                            float elapsedTime = Time.time - holdStartTime;
+                            Debug.Log($"[Tutorial] Action switched from {currentHoldingAction} to {pressedExpectedAction} (was at {elapsedTime:F1}s), resetting hold");
                             ResetHoldTracking();
                             StartHoldTracking(pressedExpectedAction);
                         }
@@ -278,7 +279,8 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         // Key released - reset hold
                         if (currentHoldingAction != null)
                         {
-                            Debug.Log($"[Tutorial] Key released (was at {currentHoldTime:F1}s), resetting hold");
+                            float elapsedTime = Time.time - holdStartTime;
+                            Debug.Log($"[Tutorial] Key released (was at {elapsedTime:F1}s), resetting hold");
                             ResetHoldTracking();
                         }
                     }
