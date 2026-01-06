@@ -54,6 +54,17 @@ public class RealtimeCoachTutorial : MonoBehaviour
     private string previousStepAction = null;
     private float currentStepRequiredHold = 0f;
 
+    // Static mapping for action to key names
+    private static readonly Dictionary<string, string> actionToKeyName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        { "move_forward", "W" },
+        { "move_backward", "S" },
+        { "turn_left", "A" },
+        { "turn_right", "D" },
+        { "pop_casters", "X" },
+        { "brake", "SPACE" }
+    };
+
     private void Awake()
     {
         if (wheelchair == null)
@@ -199,7 +210,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 if (stepTimeoutSeconds > 0 && Time.time - startTime > stepTimeoutSeconds) break;
 
                 // 1. Check if WRONG actions are performed (before checking expected)
-                bool wrongActionDetected = false;
                 foreach (var actionName in actionChecks.Keys)
                 {
                     // Skip if it's one of the expected ones
@@ -242,6 +252,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         // Start or continue holding
                         if (currentHoldingAction == null)
                         {
+                            // Start holding
                             currentHoldingAction = pressedExpectedAction;
                             currentHoldTime = 0f;
                         }
@@ -268,6 +279,23 @@ public class RealtimeCoachTutorial : MonoBehaviour
                                 expectedActionForRecord = pressedExpectedAction;
                                 actualActionForRecord = pressedExpectedAction;
                                 break;
+                            }
+                        }
+                        else
+                        {
+                            // User switched to a different expected action - reset and start over
+                            Debug.Log($"[Tutorial] Switched from {currentHoldingAction} to {pressedExpectedAction}, resetting hold");
+                            currentHoldingAction = pressedExpectedAction;
+                            currentHoldTime = 0f;
+                            
+                            // Reset UI
+                            if (holdProgressText != null)
+                            {
+                                holdProgressText.text = "";
+                            }
+                            if (holdProgressBar != null)
+                            {
+                                holdProgressBar.fillAmount = 0f;
                             }
                         }
                     }
@@ -367,17 +395,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
 
     private string GetKeyNameForAction(string action)
     {
-        Dictionary<string, string> actionToKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "move_forward", "W" },
-            { "move_backward", "S" },
-            { "turn_left", "A" },
-            { "turn_right", "D" },
-            { "pop_casters", "X" },
-            { "brake", "SPACE" }
-        };
-        
-        if (actionToKey.TryGetValue(action, out string keyName))
+        if (actionToKeyName.TryGetValue(action, out string keyName))
         {
             return keyName;
         }
