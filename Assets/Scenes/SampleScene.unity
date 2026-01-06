@@ -25098,6 +25098,9 @@ MonoBehaviour:
   obstacleZone: {fileID: 27976407}
   wheelchair: {fileID: 930632613}
   realtimeCoachTutorial: {fileID: 2068372043}
+  directionSelectionPanel: {fileID: 0}
+  turnLeftButton: {fileID: 0}
+  turnRightButton: {fileID: 0}
 --- !u!1001 &1289065547
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35086,7 +35089,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -361.8, y: -242}
+  m_AnchoredPosition: {x: -361.8, y: -178}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1805372151
