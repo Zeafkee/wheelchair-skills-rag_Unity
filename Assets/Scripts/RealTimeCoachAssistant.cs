@@ -353,12 +353,15 @@ public class RealtimeCoachTutorial : MonoBehaviour
     IEnumerator RecordError(string attemptId, int stepNumber, string errorType, string expectedAction, string actualAction)
     {
         string url = backendBaseUrl + "/attempt/" + attemptId + "/record-error";
+        
+        // Escape strings to prevent JSON injection
         string json = "{" +
             "\"step_number\": " + stepNumber + ", " +
-            "\"error_type\": \"" + errorType + "\", " +
-            "\"expected_action\": \"" + expectedAction + "\", " +
-            "\"actual_action\": \"" + actualAction + "\"" +
+            "\"error_type\": \"" + EscapeJsonString(errorType) + "\", " +
+            "\"expected_action\": \"" + EscapeJsonString(expectedAction) + "\", " +
+            "\"actual_action\": \"" + EscapeJsonString(actualAction) + "\"" +
         "}";
+        
         using (UnityWebRequest r = new UnityWebRequest(url, "POST"))
         {
             r.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
@@ -375,6 +378,12 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 Debug.LogWarning($"[Tutorial] Failed to record error: {r.error}");
             }
         }
+    }
+    
+    private string EscapeJsonString(string str)
+    {
+        if (string.IsNullOrEmpty(str)) return str;
+        return str.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
     }
 
     private string DetermineErrorType(string expected, string actual)

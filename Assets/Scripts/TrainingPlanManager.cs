@@ -95,10 +95,11 @@ public class TrainingPlanManager : MonoBehaviour
         ShowLoading(true);
         
         string url = backendBaseUrl + "/user/" + userId + "/generate-plan";
+        const string emptyJsonBody = "{}";
         
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
-            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes("{}"));
+            request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(emptyJsonBody));
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
             
@@ -215,7 +216,7 @@ public class TrainingPlanManager : MonoBehaviour
             {
                 content.AppendLine($"  🔴 {skill.skill_name}");
                 content.AppendLine($"      Reason: {skill.reason}");
-                content.AppendLine($"      Attempts: {skill.attempts} | Success Rate: {skill.success_rate:P0}");
+                content.AppendLine($"      Attempts: {skill.attempts} | Success Rate: {(skill.success_rate * 100):F0}%");
                 content.AppendLine();
             }
         }
@@ -263,7 +264,7 @@ public class TrainingPlanManager : MonoBehaviour
                 string performance = comparison.your_success_rate >= comparison.global_avg_success_rate ? "Above Average" : "Below Average";
                 
                 content.AppendLine($"  {indicator} {comparison.skill_id}");
-                content.AppendLine($"      You: {comparison.your_success_rate:P0} | Global: {comparison.global_avg_success_rate:P0} ({performance})");
+                content.AppendLine($"      You: {(comparison.your_success_rate * 100):F0}% | Global: {(comparison.global_avg_success_rate * 100):F0}% ({performance})");
                 content.AppendLine();
             }
         }
@@ -327,7 +328,7 @@ public class TrainingPlanManager : MonoBehaviour
             {
                 float successRate = skill.total_attempts > 0 ? (float)skill.successful_attempts / skill.total_attempts : 0;
                 content.AppendLine($"  • {skill.skill_id}");
-                content.AppendLine($"    Attempts: {skill.total_attempts} | Success Rate: {successRate:P0}");
+                content.AppendLine($"    Attempts: {skill.total_attempts} | Success Rate: {(successRate * 100):F0}%");
                 content.AppendLine($"    Errors: {skill.total_errors}");
                 content.AppendLine();
             }
