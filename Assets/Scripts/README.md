@@ -69,6 +69,10 @@ public static string BaseURL = "http://localhost:8000";
   - Incline Zone (Skill 15-16): 5° eğim
   - Curb Zone (Skill 25-26): 15cm kaldırım
   - Obstacle Zone (Skill 30): Hareketli engeller
+- **Turn Skill Direction Selection**: Skills 3, 4, 5, 28 için yön seçimi UI'ı
+  - Kullanıcı "LEFT" veya "RIGHT" seçebilir
+  - Backend'e yöne özel soru gönderilir
+  - GPT doğru action'ı (turn_left/turn_right) üretir
 - RAG sisteminden tutorial adımları alır
 - Wheelchair'ı doğru zone'a teleport eder
 - RealtimeCoachTutorial ile entegre çalışır
@@ -140,18 +144,60 @@ attemptTracker.RequestHint("stuck_at_obstacle", response => {
    - Main Menu Panel
    - Skill Selection Panel
    - Exercise Button
-3. Zone Transform'larını atayın:
+3. **Direction Selection Panel** (YENİ):
+   - Direction Selection Panel (Container GameObject)
+   - Turn Left Button (Button component)
+   - Turn Right Button (Button component)
+4. Zone Transform'larını atayın:
    - Basic Movement Zone
    - Incline Zone
    - Curb Zone
    - Obstacle Zone
-4. Wheelchair ve RealtimeCoachTutorial referanslarını atayın
+5. Wheelchair ve RealtimeCoachTutorial referanslarını atayın
 
 #### Skill Button Kurulumu:
 1. Skill seçim UI'ınızda her skill için bir Button oluşturun
 2. Her Button'a `SkillButton` component'ini ekleyin
 3. Inspector'da skill ID'yi set edin (örn: "1", "15", "25")
 4. ExerciseManager referansını atayın (veya otomatik bulunur)
+
+#### Direction Selection Panel Kurulumu (YENİ):
+Unity Editor'da yeni bir UI paneli oluşturun:
+
+```
+Canvas (veya mevcut Canvas)
+└── DirectionSelectionPanel (Panel)
+    ├── Background (Image - semi-transparent black)
+    ├── TitleText (Text)
+    │   └── Text: "Select Turn Direction"
+    ├── LeftButton (Button)
+    │   └── Text: "← LEFT (A)"
+    └── RightButton (Button)
+        └── Text: "RIGHT (D) →"
+```
+
+**Detaylı Adımlar:**
+1. Canvas üzerinde yeni bir **Panel** oluşturun (sağ tık → UI → Panel)
+2. Adını **DirectionSelectionPanel** yapın
+3. Panel'in background Image component'inde Alpha değerini 0.8-0.9 yapın (semi-transparent)
+4. Panel içine bir **Text** ekleyin:
+   - Adı: TitleText
+   - Text: "Select Turn Direction"
+   - Font size: 24-32
+5. İki **Button** ekleyin:
+   - **LeftButton**: 
+     - Child Text: "← LEFT (A)"
+     - Position: Sol tarafta
+   - **RightButton**: 
+     - Child Text: "RIGHT (D) →"
+     - Position: Sağ tarafta
+6. **ExerciseManager** Inspector'da:
+   - Direction Selection Panel → DirectionSelectionPanel GameObject
+   - Turn Left Button → LeftButton Button component
+   - Turn Right Button → RightButton Button component
+7. Panel'i başlangıçta **inactive** yapın (checkbox'ı kaldırın)
+
+**Not:** Button event'leri kod tarafından otomatik olarak bağlanır, Unity Editor'da OnClick olaylarını manuel bağlamanıza gerek yok.
 
 #### Kullanım:
 ```csharp
@@ -160,7 +206,21 @@ exerciseManager.OpenSkillSelection();
 
 // Skill seçildiğinde (otomatik olarak çağrılır)
 exerciseManager.OnSkillSelected("15"); // Skill 15: Ascends 5° incline
+
+// Turn skill seçildiğinde (Skills 3, 4, 5, 28)
+exerciseManager.OnSkillSelected("3");  // Direction selection panel açılır
+// Kullanıcı "LEFT" veya "RIGHT" seçer
+// Backend'e yöne özel soru gönderilir:
+// "How do I turn left 90 degrees while moving forward in a wheelchair?"
 ```
+
+**Turn Skills User Flow:**
+1. Kullanıcı "Skill 3: Turn while moving forward" seçer
+2. Direction Selection Panel otomatik açılır
+3. Kullanıcı "LEFT (A)" veya "RIGHT (D)" butonuna tıklar
+4. Backend'e spesifik soru gider: "How do I turn LEFT 90 degrees..."
+5. GPT doğru action'ı döndürür: `turn_left` 
+6. Tutorial başlar ve kullanıcıya 'A' tuşuna basması söylenir
 
 #### Moving Obstacle Kurulumu (Skill 30 için):
 1. Bir GameObject oluşturun ve `MovingObstacle` component'ini ekleyin

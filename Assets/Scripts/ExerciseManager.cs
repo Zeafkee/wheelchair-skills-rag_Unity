@@ -41,8 +41,34 @@ namespace WheelchairSkills.Training
         [Tooltip("RealtimeCoachTutorial referansı")]
         public RealtimeCoachTutorial realtimeCoachTutorial;
 
+        [Header("Direction Selection")]
+        [Tooltip("Yön seçimi paneli (Turn skill'leri için)")]
+        public GameObject directionSelectionPanel;
+        
+        [Tooltip("Sol dönüş butonu")]
+        public Button turnLeftButton;
+        
+        [Tooltip("Sağ dönüş butonu")]
+        public Button turnRightButton;
+
         // Skill-Zone mapping
         private Dictionary<string, Transform> skillZoneMap;
+        
+        // Turn skills that require direction selection
+        private HashSet<string> turnSkills = new HashSet<string>
+        {
+            "3",   // Turns while moving forwards (90°)
+            "4",   // Turns while moving backwards (90°)
+            "5",   // Turns in place (180°)
+            "28"   // Turns in wheelie position (180°)
+        };
+        
+        // Pending skill ID during direction selection
+        private string pendingSkillId;
+        
+        // Cached delegate references for cleanup
+        private UnityEngine.Events.UnityAction leftButtonAction;
+        private UnityEngine.Events.UnityAction rightButtonAction;
 
         private void Awake()
         {
@@ -95,6 +121,19 @@ namespace WheelchairSkills.Training
             {
                 exerciseButton.onClick.AddListener(OpenSkillSelection);
             }
+            
+            // Direction selection button listeners
+            if (turnLeftButton != null)
+            {
+                leftButtonAction = () => OnDirectionSelected("left");
+                turnLeftButton.onClick.AddListener(leftButtonAction);
+            }
+            
+            if (turnRightButton != null)
+            {
+                rightButtonAction = () => OnDirectionSelected("right");
+                turnRightButton.onClick.AddListener(rightButtonAction);
+            }
         }
 
         /// <summary>
@@ -123,6 +162,22 @@ namespace WheelchairSkills.Training
         {
             Debug.Log($"[ExerciseManager] Skill selected: {skillId}");
 
+            // Check if this is a turn skill that requires direction selection
+            if (turnSkills.Contains(skillId))
+            {
+                pendingSkillId = skillId;
+                
+                // Show direction selection panel
+                if (directionSelectionPanel != null)
+                {
+                    directionSelectionPanel.SetActive(true);
+                }
+                
+                Debug.Log($"[ExerciseManager] Direction selection panel opened for skill {skillId}");
+                return; // Wait for direction selection
+            }
+
+            // For non-turn skills, proceed directly
             // Zone'a teleport et
             if (skillZoneMap.TryGetValue(skillId, out Transform targetZone))
             {
@@ -176,10 +231,65 @@ namespace WheelchairSkills.Training
         }
 
         /// <summary>
+        /// Yön seçimi yapıldığında çağrılır (Turn skill'leri için)
+        /// </summary>
+        /// <param name="direction">"left" veya "right"</param>
+        public void OnDirectionSelected(string direction)
+        {
+            if (string.IsNullOrEmpty(pendingSkillId))
+            {
+                Debug.LogWarning("[ExerciseManager] No pending skill for direction selection!");
+                return;
+            }
+
+            Debug.Log($"[ExerciseManager] Direction selected: {direction} for skill {pendingSkillId}");
+
+            // Direction selection panelini kapat
+            if (directionSelectionPanel != null)
+            {
+                directionSelectionPanel.SetActive(false);
+            }
+
+            // Skill selection panelini de kapat
+            if (skillSelectionPanel != null)
+            {
+                skillSelectionPanel.SetActive(false);
+            }
+
+            // Zone'a teleport et
+            if (skillZoneMap.TryGetValue(pendingSkillId, out Transform targetZone))
+            {
+                TeleportToZone(targetZone);
+            }
+            else
+            {
+                Debug.LogWarning($"[ExerciseManager] No zone mapped for skill {pendingSkillId}");
+            }
+
+            // Yönlü soru ile training'i başlat
+            string question = GetDirectionalQuestion(pendingSkillId, direction);
+            StartSkillWithQuestion(pendingSkillId, question);
+            
+            // Clear pending skill
+            pendingSkillId = null;
+        }
+
+        /// <summary>
         /// RAG sisteminden tutorial adımlarını alır ve RealtimeCoachTutorial'ı başlatır
         /// </summary>
         /// <param name="skillId">Skill ID</param>
         private void StartSkillTraining(string skillId)
+        {
+            string question = GetQuestionForSkill(skillId);
+            StartSkillWithQuestion(skillId, question);
+        }
+
+        /// <summary>
+        /// Özel soru ile skill training başlatır (direction selection için)
+        /// </summary>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="question">RAG sistemine gönderilecek soru</param>
+        private void StartSkillWithQuestion(string skillId, string question)
         {
             if (realtimeCoachTutorial == null)
             {
@@ -187,8 +297,7 @@ namespace WheelchairSkills.Training
                 return;
             }
 
-            // Skill için uygun soru metnini oluştur
-            string question = GetQuestionForSkill(skillId);
+            Debug.Log($"[ExerciseManager] Starting training for skill {skillId} with question: {question}");
 
             // RAG sisteminden practice adımlarını al
             AskPracticeRequest request = new AskPracticeRequest(question);
@@ -198,6 +307,24 @@ namespace WheelchairSkills.Training
                 OnAskPracticeSuccess,
                 OnAskPracticeError
             ));
+        }
+
+        /// <summary>
+        /// Turn skill için yöne göre özel soru oluşturur
+        /// </summary>
+        /// <param name="skillId">Skill ID</param>
+        /// <param name="direction">"left" veya "right"</param>
+        /// <returns>Yöne özel soru metni</returns>
+        private string GetDirectionalQuestion(string skillId, string direction)
+        {
+            return skillId switch
+            {
+                "3" => $"How do I turn {direction} 90 degrees while moving forward in a wheelchair?",
+                "4" => $"How do I turn {direction} 90 degrees while moving backward in a wheelchair?",
+                "5" => $"How do I turn {direction} 180 degrees in place while sitting in a wheelchair?",
+                "28" => $"How do I turn {direction} 180 degrees in place while in a wheelie position?",
+                _ => GetQuestionForSkill(skillId) // Fallback to default
+            };
         }
 
         /// <summary>
@@ -211,7 +338,7 @@ namespace WheelchairSkills.Training
                 { "2", "How do I roll backwards 2 meters in a wheelchair?" },
                 { "3", "How do I turn 90 degrees while moving forward in a wheelchair?" },
                 { "4", "How do I turn 90 degrees while moving backward in a wheelchair?" },
-                { "5", "How do I roll 100 meters in a wheelchair?" },
+                { "5", "How do I turn 180 degrees in place while sitting in a wheelchair?" },
                 { "15", "How do I ascend a 5 degree incline in a wheelchair?" },
                 { "16", "How do I descend a 5 degree incline in a wheelchair?" },
                 { "25", "How do I ascend a 15cm curb in a wheelchair?" },
@@ -253,6 +380,17 @@ namespace WheelchairSkills.Training
             if (exerciseButton != null)
             {
                 exerciseButton.onClick.RemoveListener(OpenSkillSelection);
+            }
+            
+            // Direction selection button listener'ları temizle
+            if (turnLeftButton != null && leftButtonAction != null)
+            {
+                turnLeftButton.onClick.RemoveListener(leftButtonAction);
+            }
+            
+            if (turnRightButton != null && rightButtonAction != null)
+            {
+                turnRightButton.onClick.RemoveListener(rightButtonAction);
             }
         }
     }
