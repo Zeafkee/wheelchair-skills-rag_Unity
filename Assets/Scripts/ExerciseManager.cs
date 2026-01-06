@@ -65,6 +65,10 @@ namespace WheelchairSkills.Training
         
         // Pending skill ID during direction selection
         private string pendingSkillId;
+        
+        // Cached delegate references for cleanup
+        private UnityEngine.Events.UnityAction leftButtonAction;
+        private UnityEngine.Events.UnityAction rightButtonAction;
 
         private void Awake()
         {
@@ -121,12 +125,14 @@ namespace WheelchairSkills.Training
             // Direction selection button listeners
             if (turnLeftButton != null)
             {
-                turnLeftButton.onClick.AddListener(() => OnDirectionSelected("left"));
+                leftButtonAction = () => OnDirectionSelected("left");
+                turnLeftButton.onClick.AddListener(leftButtonAction);
             }
             
             if (turnRightButton != null)
             {
-                turnRightButton.onClick.AddListener(() => OnDirectionSelected("right"));
+                rightButtonAction = () => OnDirectionSelected("right");
+                turnRightButton.onClick.AddListener(rightButtonAction);
             }
         }
 
@@ -332,7 +338,7 @@ namespace WheelchairSkills.Training
                 { "2", "How do I roll backwards 2 meters in a wheelchair?" },
                 { "3", "How do I turn 90 degrees while moving forward in a wheelchair?" },
                 { "4", "How do I turn 90 degrees while moving backward in a wheelchair?" },
-                { "5", "How do I roll 100 meters in a wheelchair?" },
+                { "5", "How do I turn 180 degrees in place while sitting in a wheelchair?" },
                 { "15", "How do I ascend a 5 degree incline in a wheelchair?" },
                 { "16", "How do I descend a 5 degree incline in a wheelchair?" },
                 { "25", "How do I ascend a 15cm curb in a wheelchair?" },
@@ -377,14 +383,14 @@ namespace WheelchairSkills.Training
             }
             
             // Direction selection button listener'ları temizle
-            if (turnLeftButton != null)
+            if (turnLeftButton != null && leftButtonAction != null)
             {
-                turnLeftButton.onClick.RemoveAllListeners();
+                turnLeftButton.onClick.RemoveListener(leftButtonAction);
             }
             
-            if (turnRightButton != null)
+            if (turnRightButton != null && rightButtonAction != null)
             {
-                turnRightButton.onClick.RemoveAllListeners();
+                turnRightButton.onClick.RemoveListener(rightButtonAction);
             }
         }
     }
