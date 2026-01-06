@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -50,6 +51,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
 
     // Hold duration tracking
     private float currentHoldTime = 0f;
+    private float holdStartTime = 0f;
     private string currentHoldingAction = null;
     private string previousStepAction = null;
     private float currentStepRequiredHold = 0f;
@@ -156,25 +158,12 @@ public class RealtimeCoachTutorial : MonoBehaviour
             // Update UI - Input Hint
             if (stepInputHintText != null && step.expected_actions != null && step.expected_actions.Count > 0)
             {
-                List<string> keyHints = new List<string>();
-                foreach(var act in step.expected_actions)
-                {
-                    string keyName = GetKeyNameForAction(act);
-                    keyHints.Add(keyName);
-                }
-                string keysDisplay = string.Join(" OR ", keyHints);
+                string keysDisplay = string.Join(" OR ", step.expected_actions.Select(GetKeyNameForAction));
                 stepInputHintText.text = $"Hold {keysDisplay} for {currentStepRequiredHold:F1}s";
             }
             
-            // Reset hold progress UI
-            if (holdProgressText != null)
-            {
-                holdProgressText.text = "";
-            }
-            if (holdProgressBar != null)
-            {
-                holdProgressBar.fillAmount = 0f;
-            }
+            // Reset hold tracking and UI
+            ResetHoldTracking();
             
             string inputHint = "";
             if (step.expected_actions != null && step.expected_actions.Count > 0)
@@ -196,8 +185,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
             yield return StartCoroutine(WaitForInputRelease());
 
             // Reset hold tracking
-            currentHoldTime = 0f;
-            currentHoldingAction = null;
+            ResetHoldTracking();
 
             bool stepSucceeded = false;
             bool inputStarted = false;
@@ -254,12 +242,12 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         {
                             // Start holding
                             currentHoldingAction = pressedExpectedAction;
-                            currentHoldTime = 0f;
+                            holdStartTime = Time.time;
                         }
                         else if (currentHoldingAction == pressedExpectedAction)
                         {
-                            // Continue holding the same key
-                            currentHoldTime += Time.deltaTime;
+                            // Continue holding the same key - calculate elapsed time
+                            currentHoldTime = Time.time - holdStartTime;
                             
                             // Update hold progress UI
                             if (holdProgressText != null)
@@ -285,18 +273,9 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         {
                             // User switched to a different expected action - reset and start over
                             Debug.Log($"[Tutorial] Switched from {currentHoldingAction} to {pressedExpectedAction}, resetting hold");
+                            ResetHoldTracking();
                             currentHoldingAction = pressedExpectedAction;
-                            currentHoldTime = 0f;
-                            
-                            // Reset UI
-                            if (holdProgressText != null)
-                            {
-                                holdProgressText.text = "";
-                            }
-                            if (holdProgressBar != null)
-                            {
-                                holdProgressBar.fillAmount = 0f;
-                            }
+                            holdStartTime = Time.time;
                         }
                     }
                     else
@@ -305,18 +284,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         if (currentHoldingAction != null)
                         {
                             Debug.Log($"[Tutorial] Key released, resetting hold (was at {currentHoldTime:F1}s)");
-                            currentHoldTime = 0f;
-                            currentHoldingAction = null;
-                            
-                            // Reset UI
-                            if (holdProgressText != null)
-                            {
-                                holdProgressText.text = "";
-                            }
-                            if (holdProgressBar != null)
-                            {
-                                holdProgressBar.fillAmount = 0f;
-                            }
+                            ResetHoldTracking();
                         }
                     }
                 }
@@ -400,6 +368,23 @@ public class RealtimeCoachTutorial : MonoBehaviour
             return keyName;
         }
         return action;
+    }
+
+    private void ResetHoldTracking()
+    {
+        currentHoldTime = 0f;
+        holdStartTime = 0f;
+        currentHoldingAction = null;
+        
+        // Reset UI
+        if (holdProgressText != null)
+        {
+            holdProgressText.text = "";
+        }
+        if (holdProgressBar != null)
+        {
+            holdProgressBar.fillAmount = 0f;
+        }
     }
 
     private IEnumerator WaitForInputRelease()
