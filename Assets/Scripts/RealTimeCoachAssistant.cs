@@ -123,17 +123,21 @@ public class RealtimeCoachTutorial : MonoBehaviour
             PracticeStep step = steps[currentStepIndex];
             
             // Determine hold duration for this step
-            string currentExpectedAction = (step.expected_actions != null && step.expected_actions.Count > 0) 
-                ? step.expected_actions[0] : null;
-            
+            // Check if previous action matches any of the current expected actions
             currentStepRequiredHold = requiredHoldDuration;
             
-            // If cumulative and same action as previous, increase hold duration
             if (cumulativeHoldForSameAction && !string.IsNullOrEmpty(previousStepAction) 
-                && !string.IsNullOrEmpty(currentExpectedAction)
-                && previousStepAction.Equals(currentExpectedAction, StringComparison.OrdinalIgnoreCase))
+                && step.expected_actions != null && step.expected_actions.Count > 0)
             {
-                currentStepRequiredHold = requiredHoldDuration * 2f;
+                // Check if previous action matches any current expected action
+                foreach (var expectedAction in step.expected_actions)
+                {
+                    if (previousStepAction.Equals(expectedAction, StringComparison.OrdinalIgnoreCase))
+                    {
+                        currentStepRequiredHold = requiredHoldDuration * 2f;
+                        break;
+                    }
+                }
             }
             
             // Update UI - Instruction
@@ -162,9 +166,6 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 stepInputHintText.text = $"Hold {keysDisplay} for {currentStepRequiredHold:F1}s";
             }
             
-            // Reset hold tracking and UI
-            ResetHoldTracking();
-            
             string inputHint = "";
             if (step.expected_actions != null && step.expected_actions.Count > 0)
             {
@@ -184,7 +185,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
             
             yield return StartCoroutine(WaitForInputRelease());
 
-            // Reset hold tracking
+            // Reset hold tracking for new step
             ResetHoldTracking();
 
             bool stepSucceeded = false;
@@ -272,7 +273,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         else
                         {
                             // User switched to a different expected action - reset and start over
-                            Debug.Log($"[Tutorial] Switched from {currentHoldingAction} to {pressedExpectedAction}, resetting hold");
+                            Debug.Log($"[Tutorial] Action switched from {currentHoldingAction} to {pressedExpectedAction} (was at {currentHoldTime:F1}s), resetting hold");
                             ResetHoldTracking();
                             currentHoldingAction = pressedExpectedAction;
                             holdStartTime = Time.time;
@@ -283,7 +284,7 @@ public class RealtimeCoachTutorial : MonoBehaviour
                         // Key released - reset hold
                         if (currentHoldingAction != null)
                         {
-                            Debug.Log($"[Tutorial] Key released, resetting hold (was at {currentHoldTime:F1}s)");
+                            Debug.Log($"[Tutorial] Key released (was at {currentHoldTime:F1}s), resetting hold");
                             ResetHoldTracking();
                         }
                     }
