@@ -29,20 +29,25 @@ namespace WheelchairSkills.UI
             {
                 button.onClick.AddListener(OnButtonClick);
             }
+
+            // Cache ExerciseManager reference in Awake to avoid runtime lookups
+            if (exerciseManager == null)
+            {
+                exerciseManager = FindFirstObjectByType<ExerciseManager>();
+                
+                if (exerciseManager == null)
+                {
+                    Debug.LogWarning("[SkillButton] ExerciseManager not found in scene! Please assign it in the Inspector.");
+                }
+            }
         }
 
         private void OnButtonClick()
         {
             if (exerciseManager == null)
             {
-                // ExerciseManager bulunamazsa sahnede ara
-                exerciseManager = FindFirstObjectByType<ExerciseManager>();
-                
-                if (exerciseManager == null)
-                {
-                    Debug.LogError("[SkillButton] ExerciseManager not found in scene!");
-                    return;
-                }
+                Debug.LogError("[SkillButton] ExerciseManager is not assigned!");
+                return;
             }
 
             if (string.IsNullOrEmpty(skillId))

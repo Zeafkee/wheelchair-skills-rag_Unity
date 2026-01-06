@@ -48,6 +48,21 @@ namespace WheelchairSkills.Training
         {
             InitializeSkillZoneMapping();
             SetupEventListeners();
+            InitializeReferences();
+        }
+
+        private void InitializeReferences()
+        {
+            // Cache references to avoid expensive runtime lookups
+            if (wheelchair == null)
+            {
+                wheelchair = FindFirstObjectByType<WheelchairController>();
+            }
+
+            if (realtimeCoachTutorial == null)
+            {
+                realtimeCoachTutorial = FindFirstObjectByType<RealtimeCoachTutorial>();
+            }
         }
 
         private void InitializeSkillZoneMapping()
@@ -142,12 +157,8 @@ namespace WheelchairSkills.Training
 
             if (wheelchair == null)
             {
-                wheelchair = FindFirstObjectByType<WheelchairController>();
-                if (wheelchair == null)
-                {
-                    Debug.LogError("[ExerciseManager] Wheelchair not found!");
-                    return;
-                }
+                Debug.LogError("[ExerciseManager] Wheelchair reference not set!");
+                return;
             }
 
             // Wheelchair'ı zone pozisyonuna ve rotasyonuna taşı
@@ -172,12 +183,8 @@ namespace WheelchairSkills.Training
         {
             if (realtimeCoachTutorial == null)
             {
-                realtimeCoachTutorial = FindFirstObjectByType<RealtimeCoachTutorial>();
-                if (realtimeCoachTutorial == null)
-                {
-                    Debug.LogError("[ExerciseManager] RealtimeCoachTutorial not found!");
-                    return;
-                }
+                Debug.LogError("[ExerciseManager] RealtimeCoachTutorial reference not set!");
+                return;
             }
 
             // Skill için uygun soru metnini oluştur
