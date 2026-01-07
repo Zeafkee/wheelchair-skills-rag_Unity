@@ -1,0 +1,61 @@
+﻿═══════════════════════════════════════
+  👤 User: user_intermediate_02
+  📊 Phase: Mobility
+  🕐 Generated: Oca 07, 2026 18:43
+═══════════════════════════════════════
+
+⚠️ SKILLS NEEDING IMPROVEMENT
+───────────────────────────────────────
+  ❌ a02_2m_backward
+      Total Errors: 2
+      Error Types: moved_instead_of_stopping, wrong_input
+      You: 33% | Global: 31%
+
+  ❌ a17_ascend_10deg
+      Total Errors: 2
+      Error Types: wrong_input, stopped_instead_of_moving
+      You: 60% | Global: 64%
+
+  ❌ a28_wheelie_turn_180
+      Total Errors: 1
+      Error Types: wrong_input
+      You: 0% | Global: 0%
+
+🔍 YOUR COMMON MISTAKES
+───────────────────────────────────────
+  • Step 3 in a28_wheelie_turn_180
+    Expected: turn_left → You did: move_forward
+    Occurrences: 1x
+
+  • Step 3 in a02_2m_backward
+    Expected: brake → You did: move_backward
+    Occurrences: 4x
+
+  • Step 2 in a02_2m_backward
+    Expected: move_backward → You did: turn_left
+    Occurrences: 2x
+
+  • Step 1 in a05_turn_in_place_180
+    Expected: turn_left → You did: move_forward
+    Occurrences: 4x
+
+  • Step 1 in a17_ascend_10deg
+    Expected: move_forward → You did: turn_left
+    Occurrences: 2x
+
+  • Step 2 in a17_ascend_10deg
+    Expected: move_forward → You did: brake
+    Occurrences: 1x
+
+  • Step 1 in a04_turn_backward_90
+    Expected: move_backward → You did: brake
+    Occurrences: 1x
+
+  • Step 1 in a27_wheelie_30sec
+    Expected: move_backward → You did: move_forward
+    Occurrences: 3x
+
+  • Step 1 in a03_5m_backward
+    Expected: move_backward → You did: move_forward
+    Occurrences: 1x
+

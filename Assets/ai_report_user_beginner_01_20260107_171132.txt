@@ -1,0 +1,101 @@
+﻿PART 1 — SUMMARY & ANALYSIS
+
+A) Executive summary
+User user_beginner_01 shows strong forward propulsion but marked difficulty with backward control, wheelies, and some turning/manoeuvre skills. Key training-plan flagged steps match several low-success skills and should be prioritized to reduce errors and safety risk.
+
+B) Direct answers to the four questions
+- Which skills need immediate attention?
+  - Wheelie skills (a27 wheelie_30sec, a28 wheelie_turn_180), 2m backward (a02_2m_backward), and gap negotiation (a21_gap_15cm) due to very low success and/or high error counts.
+- Which specific steps are problematic according to the training log?
+  - Step 1 in a05_turn_in_place_180; Step 2 in a01_10m_forward; Step 1 and Step 3 in a02_2m_backward; Step 1 in a18_descend_10deg.
+- What should be the top three next training priorities?
+  - Progressive wheelie balance and small-range wheelie control with close spotting and increments in duration/turning.
+  - Backward propulsion and controlled turning drills emphasizing Step 1/3 breakdown for a02 and turning-in-place practice.
+  - Safe descent/ascend and curb handling drills (10° slopes, 15 cm curbs) using graded exposures and assistive spotting.
+- Any immediate safety concerns?
+  - Yes — persistent failures in wheelies and backward control increase risk of tipping or uncontrolled falls; curb and gap attempts also carry fall risk. Recommend supervised practice, use of spotting, and protective measures (brakes, flat training area) until skills improve.
+
+C) Compact table (skill_id | attempts | success_rate% | errors | most_problematic_step)
+| skill_id | attempts | success_rate% | errors | most_problematic_step |
+|---|---:|---:|---:|---|
+| a01_10m_forward | 14 | 93 | 1 | Step 2 (flagged) |
+| a02_2m_backward | 13 | 31 | 9 | Step 1 & Step 3 (flagged) |
+| a05_turn_in_place_180 | 12 | 58 | 5 | Step 1 (flagged) |
+| a17_ascend_10deg | 11 | 64 | 4 | not flagged |
+| a27_wheelie_30sec | 8 | 0 | 8 | not flagged (skill-level failure) |
+| a18_descend_10deg | 8 | 63 | 3 | Step 1 (flagged) |
+| a04_turn_backward_90 | 7 | 43 | 4 | not flagged |
+| a26_curb_down_15cm | 6 | 50 | 3 | not flagged |
+| a03_5m_backward | 6 | 50 | 3 | not flagged |
+| a21_gap_15cm | 5 | 20 | 4 | not flagged |
+| a25_curb_up_15cm | 4 | 75 | 1 | not flagged |
+| a06_sideways_maneuver | 4 | 50 | 2 | not flagged |
+| a28_wheelie_turn_180 | 2 | 0 | 2 | not flagged (skill-level failure) |
+| a26_15cm_climb_up | 1 | 100 | 0 | not flagged |
+
+D) Short commentary
+Overall performance shows reliable forward propulsion but inconsistent control when moving backward, turning under load, and performing balance-intensive skills. The training-plan flagged steps align with observed failure patterns and should be isolated for targeted practice. Begin with low-risk, highly controlled progressions (short distances, assisted wheelies, slow backward turns) and increase challenge only after consistent success. Maintain close supervision and use protective/spotting measures for wheelies, curbs, and slope work until competency improves.
+
+PART 2 — 2-WEEK TRAINING PROGRAM & CHECKLIST
+
+Below is a practical, beginner-scaled 2‑week training program (6 sessions total, three per week) tailored to the performance summary you provided. It focuses on your weakest skills (backward travel, wheelies and wheelie turns, gap negotiation, turning while moving/backward, and curb/grade control) while maintaining what you already do well (forward rolling). Each session includes a warm-up and cool-down, exact drill sets/reps/time, clear progression steps across the two weeks, and safety guidance.
+
+Schedule (suggested)
+- Week 1: Monday (Session 1), Wednesday (Session 2), Friday (Session 3)
+- Week 2: Monday (Session 4), Wednesday (Session 5), Friday (Session 6)
+- Sessions ~45–60 minutes each.
+
+General warm-up (5–8 minutes each session)
+- Easy forward rolling: 5 minutes continuous, moderate pace (use this also to check hand placement, posture and brakes). 
+- Gentle range-of-motion for shoulders, wrists; check gloves and wheelchair condition.
+
+Session 1 — Backward basics and turning prep (focus: a02 2m backward, a03 5m backward, a05 turn_in_place_180 Step 1)
+Goals: improve control and confidence moving backward; reinforce a stable posture and braking habits.
+Drills:
+1) Assisted backward short reps (Skill: 2m backward — Step 1 focus)
+   - 8–10 attempts of 1.5–2 m each. Spotter behind at first, assist at hips or push on pushrims if needed.
+   - Goal: smooth, controlled backward pushes with eyes over shoulder, stop using controlled braking.
+   - Rest 30–60s between reps.
+   - Progression (later sessions): reduce spotting, increase to 2–3 m.
+2) Backward continuous 5m practice (Skill: 5m backward)
+   - 4–6 attempts at 5 m each; practice small, steady pushes (3–5 pushes per meter).
+   - If balance/wobble, stop and reset.
+3) Turn-in-place practice (Skill: 180° turn — Step 1)
+   - 6–8 attempts of 90° pivots (both directions) then 4–6 attempts of 180° turning with short breaks.
+   - Use cone markers to aim pivot points.
+Cooldown (5 min): easy forward rolling + stretch.
+
+Session 2 — Turning while moving and backward turning (focus: a04 turn_backward_90, a05 turn_in_place_180 progression)
+Goals: increase turning accuracy and control especially while reversing.
+Drills:
+1) 90° backward turn drills
+   - 8–10 attempts starting from 1–2 m backward then 90° turn to stop forward. Use a spotter initially.
+   - Break down into step sequence: (a) initial backward push(s), (b) rotate torso and use stronger pushes on one wheel to turn, (c) brake to stop.
+2) Figure-8 and cone weaving (improves small-radius turning and hand coordination)
+   - 4 sets of 3 figure-8 passes each (slow, controlled).
+3) 180° in-place progression
+   - 6–8 attempts. Focus on smooth arc rather than abrupt jerks.
+Progression for Week 2: increase speed slightly, reduce spotting, increase repetitions to build consistency.
+
+Session 3 — Incline and curb safety basics (focus: a17 ascend_10deg, a18 descend_10deg Step
+
+(Continuation — Part 2: 2-week personalized training program for user_beginner_01)
+
+Overview
+- Goal: improve weakest areas from your assessment—backing up (2m & 5m), backward turns, wheelies (static balance and wheelie turns), negotiating small gaps/curbs (15 cm), and confidence on 10° slopes—while maintaining your strong forward control.
+- Schedule: 6 sessions over 2 weeks (three sessions per week). Each session = 45–60 minutes. Rest/recovery days between sessions.
+
+Progression principle
+- Start with the Step 1s noted in your record for each skill. Progress only when you can complete the current drill with control and no safety incidents on 70–80% of attempts across two consecutive sessions.
+- Increase repetitions, distance, or hold-time gradually. For wheelies, increase lift height and hold time before attempting turning while in a wheelie.
+
+Week 1 — Foundation and safe skill introduction
+
+Session 1 (Week 1 — Day 1): Backward control + basic turns
+- Total time: 50 minutes
+- Warm-up (8 min): 10 m forward at comfortable pace × 3 (use this to reinforce the strong forward skill). Gentle arm/shoulder circles off the chair.
+- Drill A — 2 m backward (Step 1 start): 10–12 reps. Practice short, controlled backward pushes, using slow strokes and eyes over your shoulder. Rest 30–60 s between reps. Focus: steady contact with rims, small strokes, keep shoulders relaxed.
+- Drill B — 5 m backward progression: 6 reps. Start by chaining two comfortable 2 m backward reps with a brief pause, then progress to continuous 5 m when steady. Rest 60–90 s between reps.
+- Drill C — Turn backward 90° basics: 8 reps (4 each direction). Practice small turning strokes backward: push on one rim and hold the other. Use cones placed roughly 1.5 m apart to aim the turn.
+- Cool-down (5 min): slow forward roll 2 × 10 m and gentle stretching.
+- Notes
