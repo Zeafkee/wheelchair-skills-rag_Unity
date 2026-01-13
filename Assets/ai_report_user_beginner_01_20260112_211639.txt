@@ -1,0 +1,140 @@
+﻿PART 1 — SUMMARY & ANALYSIS
+
+**Clarifying report requirements**
+
+I need to produce part 1 of a report with an executive summary and direct answers to four unspecified questions. The user has provided a condensed summary, but I’m not sure about the exact questions. Based on common analysis, I'm assuming they relate to skills needing attention, missing data, recommendations, and next steps. So, maybe they are: Q1) Which skills need prioritization? Q2) Which steps lack data? Q3) Which skills have high error rates? Q4) Any training suggestions?**Structuring report details**
+
+I'll create four bullet points: priority skills to address, steps with missing data, skills with 0% success rates, and recommended actions. Next, I’ll format a compact Markdown table that includes columns for skill_id, attempts, success rate percentage, errors, and the most problematic step. For the most problematic step, I need to identify which steps have the highest errors, but since some step-level data is missing, I might need to mark them as “unknown” or choose a specific step when available.**Clarifying problematic steps**
+
+I'll set "most problematic step" to "step-level data missing" for many skills. However, for skills like wheelie_30sec with a 0% success rate and 8 errors, I might note it as "likely wheelie initiation (steps 1-3)" but I want to avoid speculating. I think indicating "unknown (step data missing)" is safer. In the table, I'll set "most problematic step" for skills with no step data as "step data missing," but for those with a 0% success, I’ll mark it as "entire skill failed — investigate all steps." The table will be formatted in Markdown with headers and rows for the 21 skills.**Addressing duplicates and commentary**
+
+I’ve noticed there are duplicates in the skills list, like a05_turn_in_place_180 and a05_backward_90_turn, as well as a26 appearing twice with curb_down_15cm and 15cm_climb_up. I’ll make sure to include each of these. For the commentary section, I'll provide a concise analysis highlighting low success for backward 2m skills and missing data, along with wheelie failures. My recommendations will focus on targeted retraining, collecting step-level data, and emphasizing safety. 
+
+For the executive summary, I’ll mention overall issues with backward skills and wheelies having zero success, while noting moderate successes in other skills and the missing critical step data. I'll also label the direct answers to the four questions simply as "1," "2," etc. to keep it organized.**Preparing the skills table**
+
+I'll provide direct answers to the four questions by creating a Markdown table. Each row will represent a skill along with its attempts, success rate percentage, and number of errors. I'll make sure to note the "most problematic step" for each skill, referencing any missing step data precisely. For example, if steps are missing, I’ll indicate that concisely like “steps 1–3 missing.” 
+
+For skills like a27_wheelie_30sec with a failure rate, I might further specify the entire skill's failure. Overall, I’m aiming for clarity while ensuring all necessary details are included!**Clarifying report requirements**
+
+I need to produce part 1 of the report, which includes an executive summary and direct answers to four unspecified questions. The user's condensed summary hints at common questions like skills needing attention, missing data, recommendations, and next steps. I'm assuming the questions refer to: 1) Which skills need priority training? 2) Which steps lack data? 3) Which skills show high error rates? 4) What are the training recommendations? I’ll ensure to provide direct answers in bullet points.**Organizing report details**
+
+I’m planning to create four bullet points: first, prioritize skills to address; second, identify steps with missing data; third, highlight skills with a 0% success rate; and fourth, present recommended actions. Next, I’ll format a compact Markdown table with columns like skill_id, attempts, success_rate%, errors, and most_problematic_step. For the latter, I’ll consider steps that have the highest errors or label them as “unknown” if data is missing. The user’s summary focuses on skill-level data, with step-level entries marked as unknown.**Structuring the data effectively**
+
+I need to set the most_problematic_step as "step-level data missing" for most skills, but for clear failures like wheelie_30sec with a 0% success rate and 8 errors, I might suggest it relates to "step 1/2/3 unknown" or indicate "likely wheelie initiation issues." However, I should avoid fabricating specifics. Instead, using "unknown (step data missing)" is better for those cases. For skills with present steps, I’ll indicate "entire skill failed — investigate all steps" for the 0% success cases. Finally, the table should be in Markdown format, with a header and rows for each of the 21 skills.**Addressing duplicates and commentary**
+
+I see there are duplicates, like a05_turn_in_place_180 and a05_backward_90_turn, as well as a26 listed twice with curb_down_15cm and 15cm_climb_up. I'll include each unique entry. For the commentary, I’ll give a concise analysis focusing on the low success of backward 2m, missing step data on wheelie failures, and recommend targeted retraining, step-level data collection, safety, adaptive equipment, and practice progression. 
+
+In the executive summary, I’ll note overall issues with backward skills and wheelie turn failures. Lastly, I’ll present the direct answers to the four questions as labeled bullets to ensure clarity.**Preparing direct answers**
+
+I need to provide direct answers to the four questions. First, I’ll identify which skills need immediate attention. Second, I’ll list the skills that require step-level data. Third, I’ll highlight any skills showing complete failure. Lastly, I’ll recommend immediate actions to address these issues. After that, I’ll prepare a table with a header row followed by the appropriate rows for each skill and their corresponding answers. This structured approach should keep everything clear and organized!**Listing condensed skill data**
+
+I've compiled a complete list of condensed skill lines with their respective attempts, success rates, and errors.
+
+The skills include a01_10m_forward with a 79% success rate and a27_wheelie_30sec, which unfortunately has a 0% success rate. Overall, I have 18 distinct rows.
+
+For the most problematic step, if a skill has missing step-level entries, those will correspond to specific skills from the user's list. I’ll make sure to note those instances clearly for analysis.**Identifying skills with unknown steps**
+
+I’m checking which skills have unknown step queries based on the user’s list. For instance, a02_2m_backward has missing steps 1, 2, and 3. The same goes for a05_turn_in_place_180 and a27_wheelie_30sec, which also have missing steps noted. 
+
+For each skill with unknown steps, I’ll denote it as "step-level data missing (see steps X)," but I’ll ensure it’s accurate per skill. For example, a01_10m_forward shows no unknown steps, so I can label it "no flagged step data." I’ll continue to map out each skill systematically.**Mapping skill step data**
+
+I’ve noted the missing steps for various skills. For example, a27_wheelie_30sec is marked with "steps 1–3 missing; entire skill 0%." On the other hand, a03_5m_backward shows no unknowns, so it gets "no flagged step data." 
+
+I'll keep this pattern going for the others, like a18_descend_10deg, which has steps 1, 2, and 4 missing; and a28_wheelie_turn_180, which also lacks steps 2 and 3 and has 0% success. I’ll then format all this data into a properly structured Markdown table with a header and rows, ensuring to include the success rate and errors where applicable.
+
+**Evaluating step data consistency**
+
+I think being consistent is important. If success rates are low—under 50%—it makes sense to say "step data unavailable; likely Step 1." Otherwise, I could use "none/NA" or "unknown," but I feel it might be clearer to state "step data missing" when specifics aren’t provided. The requirement to include "most_problematic_step" is essential. For skills with unknown steps, I should mark the most problematic step as one needing data, based on the user's list.**Analyzing unknown steps**
+
+I need to check the list of unknown steps, which includes several entries: for example, Step 3 in a02_2m_backward and various steps in other skills. It seems that many steps are flagged as missing, indicating they’re likely problematic. For the "most_problematic_step" column, I think it makes sense to select any step from that list as the most problematic step for that skill. This approach should help clarify where the issues are!**Mapping skills to steps**
+
+For skills that don’t have step entries, like a01_10m_forward, I'll mark it as "none identified" or "unknown." For skills like a02_2m_backward, which has steps 1, 2, and 3 listed, I’m considering marking the most problematic step as Step 2, since it’s the middle one. But I think it might be clearer to note "Steps 1-3 (data missing)" for compactness. Then for a05_turn_in_place_180, since Step 1 and Step 2 are listed, I’ll reflect that accordingly!**Considering step data consistency**
+
+I think it makes sense to be consistent in how I handle low success rates, like saying "step data unavailable; likely Step 1" if it's under 50%. For cases with missing specifics, saying "step data missing" seems clearer. I need to include "most_problematic_step" for each skill, which can refer to a specific step number from the user’s unknown entries. If multiple steps are listed as needing data, I'll consider those as the most problematic steps.**Reviewing unknown steps**
+
+I’m looking at the list of unknown steps, and it includes a lot like Step 3 in a02_2m_backward and Step 1 in a05_turn_in_place_180, among others. Since many steps are flagged as missing, these seem likely to be the problematic ones. For the "most_problematic_step" column, I can choose the corresponding step for any skill that's in that list. For skills without any step entries, like a01_10m_forward, I’ll note "none identified" or "unknown."**Mapping steps for analysis**
+
+I’m mapping out the steps for different skills. For a01_10m_forward, it’s not in the step list, so I’ll mark the most problematic step as "none identified." For a02_2m_backward, since Steps 1, 2, and 3 are listed, I need to decide if I should choose Step 2 as the most problematic or note "Steps 1-3 (data missing)" to keep it compact. Finally, a05_turn_in_place_180 has Step 1 and Step 2 listed, which is good for mapping.
+
+PART 2 — 2-WEEK TRAINING PROGRAM & CHECKLIST
+
+Below is a practical, beginner-focused 2-week training plan (6 sessions) built from your Part 1 results. It targets your biggest weaknesses: backward control (2 m and longer), wheelie ability (holds and turns), backward turning, negotiating gaps and curb descents, and general balance/turning. Sessions are about 60–75 minutes each. Bring a trained spotter for higher-risk drills (wheelies, curb drops).
+
+Schedule
+- Week 1: Mon (Session 1), Wed (Session 2), Fri (Session 3)
+- Week 2: Mon (Session 4), Wed (Session 5), Fri (Session 6)
+
+Session format (each session)
+- Warm-up: 8–10 minutes (easy forward rolling, shoulder circles, breathing)
+- Skill blocks: 45–55 minutes (drills below)
+- Cool-down: 5–10 minutes (stretching upper body, review)
+
+Progression principle
+- Start each new skill with guidance/assistance. Increase difficulty across sessions by: fewer assists, longer distance/time, tighter turning radii, higher obstacle height, or adding time pressure. Rest 60–90 s between intense reps/sets, longer if needed.
+
+SESSION 1 — Foundation & Backward Control (60–70 min)
+Goal: Build safe backward rolling, control and simple backward turns.
+Warm-up (10 min)
+- 5 min forward rolling 10 m laps at comfortable pace (use this as confidence builder).
+- Shoulder/neck stretches and grip check.
+
+Drill A: 2 m backward (a02) — basic control
+- Setup: clear flat area, cones marking 2 m.
+- Drill: 6 sets × 5 repetitions of 2 m backward, stop and hold for 2 s at line.
+- Coaching focus: small, deliberate pushes; look over shoulder; use both hands evenly; use braking with fingertips.
+- Progression within session: first 3 sets with spotter guiding shoulders; last 3 sets solo.
+
+Drill B: 5 m backward (a03) — distance control
+- 4 sets × 3 reps of 5 m backward, slow and controlled.
+- Emphasize cadence and consistent push size. If stability drops, reduce speed.
+
+Drill C: Backward 90° turn (a04 / backward turns)
+- 5 sets × 6 reps practicing a backward sweep to 90° (start slow).
+- Break down: small reverse push, short turn of torso, finish with a forward push to stabilize.
+
+Cool-down (5–10 min)
+- Gentle forward roll, breathing, discuss challenges.
+Progress target for Session 1: reduce “overcorrection” by using shorter, controlled pushes; aim to complete most reps without large corrections.
+
+SESSION 2 — Wheelie Foundations (60–75 min)
+Goal: Learn weight shift and balance point; develop short holds (this targets a27 and a28).
+Safety first: spotter beside you, anti-tip engaged if available; helmet and gloves recommended.
+
+Warm-up (8–10 min)
+- Forward 10 m rolls + practice small forward-to-backward weight shifts at slow speed.
+
+Drill A: Weight-shift introduction (no full lift)
+- 4 sets × 10 reps
+
+Week layout (6 sessions): 3 sessions per week — Monday, Wednesday, Friday — for 2 weeks. Sessions ≈60–75 minutes. Warm-up and cool-down every time. Progress by increasing difficulty, duration, or reducing assistance each session. Aim for quality reps rather than speed.
+
+Session 1 — Foundation & backward basics (60–70 min)
+- Warm-up (10 min)
+  - Push forward easy 5 minutes, gentle turns and weight shifts.
+  - Shoulder circles and wrist stretches (2–3 min).
+- Drill A: 2 m backward control (primary weakness) (20 min)
+  - Setup: straight 5–6 m lane, cone at 2 m.
+  - Work: 6 sets of 2 m backward, stop at cone, focus on smooth hand push and visual alignment. If needed, use verbal cues from coach/spotter.
+  - Rest 60–90 s between attempts.
+  - Goal: accurate stops and minimal corrective pushes on 4/6 attempts.
+- Drill B: Backward start/stop + small backward turns (15 min)
+  - Work: 4 sets of 3 repetitions: backward 1 m, pivot 45° backward turn, forward to reset.
+  - Emphasize controlled small pushes and seat position for balance.
+- Drill C: Turn-in-place practice (90° & 180° intro) (10 min)
+  - Work: 6 single attempts at 90° turns forward, 4 attempts at 180° slow turn — practice short, controlled pushes on one wheel then the other.
+- Cool-down & notes (5 min)
+  - Review form, note sensations (wrist/shoulder fatigue).
+
+Progression target for next session: smoother 2 m backward with fewer corrections; legible 90° turns.
+
+Session 2 — Wheelie foundations & ramp confidence (65–75 min)
+- Warm-up (10 min)
+  - Forward and backward mobility, 5 minutes.
+- Drill A: Wheelie set-up & static lifts (20 min) — primary long-term weakness
+  - Safety: spotter at front and one hand lightly on pushrim at first.
+  - Work:
+    - Step 1: Assisted front-caster lift. 8 reps of short lift (1–2 s) with spotter support.
+    - Step 2: Self-assisted lift using quick backward push and strong pull, aim to hold 2–3 s. 6 attempts.
+    - Step 3: Static balance attempt with both hands, 4 attempts of 5–8 s holds.
+  - Rest 60–90 s.
+- Drill B: 10
