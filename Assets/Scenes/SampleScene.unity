@@ -18137,6 +18137,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1180457464963334097, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2315493291279652260, guid: d2e8c4942af99c143a3f6e55a6c91c7f, type: 3}
       propertyPath: popAngle
       value: -35
@@ -19249,7 +19253,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &864694833
 RectTransform:
   m_ObjectHideFlags: 0

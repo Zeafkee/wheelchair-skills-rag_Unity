@@ -662,16 +662,10 @@ public class TrainingPlanManager : MonoBehaviour
 
     #region Save to File Helpers
 
-    // Returns folder path to save files. In Editor this is the project Assets folder; in builds persistentDataPath is safer.
+    // Returns folder path to save files. Using the parent of dataPath ensures it saves to the project root (not inside Assets) in Editor and the app root in builds.
     private string GetSaveFolder()
     {
-#if UNITY_EDITOR
-        // Save to project folder for development/testing
-        return Application.dataPath;
-#else
-        // Save to persistent data path for builds
-        return Application.persistentDataPath;
-#endif
+        return Path.GetDirectoryName(Application.dataPath);
     }
 
     private string SanitizeFilename(string name)
