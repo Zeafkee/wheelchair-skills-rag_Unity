@@ -21,7 +21,7 @@ public class TrainingPlanManager : MonoBehaviour
     public Button viewGlobalStatsButton;
     public Button clearProgressButton;
     public Button closePanelButton;
-    public Button generateReportButton; // new button to generate AI report
+    public Button generateReportButton; 
 
     [Header("UI References - Panel")]
     public GameObject trainingPlanPanel;
@@ -31,7 +31,6 @@ public class TrainingPlanManager : MonoBehaviour
     [Header("UI References - Loading")]
     public GameObject loadingIndicator;
 
-    // Caches for analytics and user progress (used to augment generate-plan output)
     private AnalyticsResponse analyticsCache = null;
     private string userProgressJsonCache = null;
 
