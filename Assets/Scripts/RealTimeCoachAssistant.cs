@@ -313,7 +313,11 @@ public class RealtimeCoachTutorial : MonoBehaviour
                 yield break;
             }
         }
-
+        ResetTextes();
+        if(stepInstructionText != null)
+        {
+            stepInstructionText.text = "Tutorial Completed! Well done!";
+        }
         Debug.Log("[Tutorial] Skill attempt completed successfully!");
         EndTutorialSession(true);
     }
@@ -372,6 +376,11 @@ public class RealtimeCoachTutorial : MonoBehaviour
             if (r.result == UnityWebRequest.Result.Success)
             {
                 Debug.Log($"[Tutorial] Error recorded: {errorType}");
+                ResetTextes();
+                if(stepInstructionText != null)
+                {
+                    stepInstructionText.text = $"Error Recorded: {errorType.Replace("_", " ")}. Please try again.";
+                }
             }
             else
             {
@@ -493,5 +502,28 @@ public class RealtimeCoachTutorial : MonoBehaviour
         i += pattern.Length;
         int j = json.IndexOf(q, i);
         return j > i ? json.Substring(i, j - i) : "";
+    }
+    public void ResetTextes()
+    {
+        
+
+        if (holdProgressText != null)
+        {
+            holdProgressText.text = "";
+        }
+        if (stepInstructionText != null)
+        {
+            stepInstructionText.text = "";
+        }
+        if (stepCueText != null)
+        {
+            stepCueText.text = "";
+        }
+        if (stepInputHintText != null)
+        {
+            stepInputHintText.text = "";
+        }
+
+
     }
 }
