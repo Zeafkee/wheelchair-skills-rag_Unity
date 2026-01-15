@@ -1,0 +1,65 @@
+﻿═══════════════════════════════════════
+  👤 User: user_beginner_01
+  📊 Phase: Foundation
+  🕐 Generated: Oca 15, 2026 13:48
+═══════════════════════════════════════
+
+⚠️ SKILLS NEEDING IMPROVEMENT
+───────────────────────────────────────
+  ❌ a01_10m_forward
+      Total Errors: 3
+      Error Types: wrong_direction, wrong_input, wrong_direction
+      You: 72% | Global: 79%
+
+  ❌ a02_2m_backward
+      Total Errors: 3
+      Error Types: stopped_instead_of_moving, wrong_input, moved_instead_of_stopping
+      You: 0% | Global: 31%
+
+  ❌ a05_turn_in_place_180
+      Total Errors: 2
+      Error Types: wrong_input
+      You: 33% | Global: 58%
+
+🔍 YOUR COMMON MISTAKES
+───────────────────────────────────────
+  • Step 1 in a05_turn_in_place_180
+    Expected: turn_left → You did: turn_right
+    Occurrences: 4x
+
+  • Step 1 in a03_5m_backward
+    Expected: move_backward → You did: turn_right
+    Occurrences: 3x
+
+  • Step 2 in a01_10m_forward
+    Expected: move_forward → You did: move_backward
+    Occurrences: 1x
+
+  • Step 3 in a01_10m_forward
+    Expected: move_forward → You did: turn_left
+    Occurrences: 2x
+
+  • Step 3 in a01_10m_forward
+    Expected: move_backward → You did: move_forward
+    Occurrences: 2x
+
+  • Step 1 in a02_2m_backward
+    Expected: move_backward → You did: brake
+    Occurrences: 3x
+
+  • Step 1 in a02_2m_backward
+    Expected: move_backward → You did: turn_left
+    Occurrences: 3x
+
+  • Step 3 in a02_2m_backward
+    Expected: brake → You did: move_backward
+    Occurrences: 4x
+
+  • Step 1 in a18_descend_10deg
+    Expected: move_forward → You did: move_backward
+    Occurrences: 1x
+
+  • Step 1 in a25_5cm_step_down
+    Expected: unknown → You did: brake
+    Occurrences: 1x
+
